@@ -1,0 +1,53 @@
+%% Stage: Target
+%% Last reviewed: 2026-04-25
+%%{init: {'theme':'default'}}%%
+flowchart TB
+    Start([linctl new myblog<br/>--module github.com/foo/myblog<br/>--framework gin]) --> ParseFlag
+
+    ParseFlag[ParseFlags<br/>cobra 解析参数] --> BuildProj[BuildProject<br/>从 flags 构建 Project 对象]
+
+    BuildProj --> Validate{validator.v10<br/>校验 Project}
+    Validate -->|fail| ErrOut[人类可读错误<br/>+ exit 1]
+    Validate -->|ok| LoadFeatures
+
+    LoadFeatures[Feature Registry<br/>加载所有适用的 Feature] --> ExpandComponents
+
+    ExpandComponents[Component Expansion<br/>展开每个 Component] --> CollectPairs
+
+    CollectPairs[CollectPairs<br/>每个 Feature 贡献 dst→tpl 映射]
+    CollectPairs --> Merge[去重合并 Pairs<br/>共享文件如 internal/pkg/*]
+
+    Merge --> Plan[Plan<br/>对比磁盘现状<br/>分类: Create/Update/Skip/Conflict]
+
+    Plan --> ShowPlan[ShowPlan<br/>打印彩色 plan 表格]
+
+    ShowPlan --> NeedConfirm{需要确认?<br/>plan 命令 / --dry-run}
+    NeedConfirm -->|是| End1([结束: 仅展示计划])
+    NeedConfirm -->|否| Apply
+
+    Apply[Apply<br/>逐文件渲染 + 写入]
+
+    Apply --> Render[text/template.Execute<br/>+ FuncMap]
+    Render --> Format{是 .go?}
+    Format -->|是| Gofumpt[gofumpt.Source]
+    Format -->|否| Skip[原样输出]
+    Gofumpt --> Hash[计算 sha256<br/>追加 hash 注释]
+    Skip --> Hash
+    Hash --> WriteFile[原子写入<br/>tmp + rename]
+
+    WriteFile --> ASTInjects[AST Injects<br/>修改 biz.go/store.go/proto]
+    ASTInjects --> Hooks[执行 PostApply Hooks<br/>按执行策略 restricted/confirm]
+    Hooks --> Report[Reporter<br/>打印结果 + getting started]
+    Report --> End2([结束: 项目就绪])
+
+    classDef start fill:#86efac,stroke:#16a34a
+    classDef end1 fill:#fde68a,stroke:#d97706
+    classDef end2 fill:#86efac,stroke:#16a34a
+    classDef err fill:#fca5a5,stroke:#dc2626
+    classDef decision fill:#bfdbfe,stroke:#2563eb
+
+    class Start start
+    class End1 end1
+    class End2 end2
+    class ErrOut err
+    class Validate,NeedConfirm,Format decision

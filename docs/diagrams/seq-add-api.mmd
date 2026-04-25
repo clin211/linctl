@@ -1,0 +1,73 @@
+%% Stage: Phase 2+ (含 dst-based AST 注入；Phase 1 仅生成 resource 文件，不做 AST)
+%% Last reviewed: 2026-04-25
+%%{init: {'theme':'default'}}%%
+sequenceDiagram
+    autonumber
+    actor User
+    participant CLI as cli.cmd_add
+    participant Orch as orchestrator
+    participant Loader as project.Loader<br/>(internal/project/loader.go)
+    participant Comp as component.WebServer
+    participant PB as PairBuilder
+    participant Plan as Planner
+    participant FM as fs.FileManager
+    participant Eng as template.Engine
+    participant AST as ast.Injector
+    participant Proto as ast.ProtoInjector
+
+    User->>CLI: linctl add api Post Comment
+
+    CLI->>Loader: Load(linctl.yaml)
+    Loader-->>CLI: *Project
+
+    CLI->>Orch: AddAPI(project, kinds=["Post","Comment"])
+
+    Orch->>Comp: FindWebServer(project, "")
+    Note right of Comp: 单一时自动选；多个时报错要求 --component
+    Comp-->>Orch: WebServer
+
+    loop for each kind
+        Orch->>Comp: PrepareRESTMetadata(kind)
+        Note over Comp: 计算 R *RESTGen<br/>SingularName/PluralName/...
+        Comp->>PB: 添加 REST 资源相关 Pairs<br/>(handler/biz/store/proto/model/...)
+    end
+
+    Orch->>Plan: ComputePlan(pairs, currentDisk)
+    Plan->>FM: 对每个 dst 检查文件是否存在 + hash
+    FM-->>Plan: 文件状态
+    Plan-->>Orch: *Plan (10个 Create + 0 Conflict)
+
+    Orch->>User: 显示 Plan
+
+    alt 用户确认
+        Orch->>Orch: Apply Phase
+        loop for each Action
+            Orch->>Eng: Render(pair)
+            Orch->>FM: Write
+        end
+    end
+
+    Note over Orch,AST: AST 注入阶段
+    Orch->>AST: AddMethod("biz", biz.go, postRESTGen, importPath)
+    AST->>FM: Read biz.go
+    AST->>AST: parser.ParseFile (用 dst.Decorator)
+    AST->>AST: 在 IBiz interface 添加 Posts() 方法
+    AST->>AST: 在 biz struct 添加 Posts() 实现
+    AST->>AST: 添加 import "v1/post"
+    AST->>AST: dst.Restorer.Print → format.Source
+    AST->>FM: Write biz.go (带新 hash)
+
+    Orch->>AST: AddMethod("store", store.go, postRESTGen, "")
+    Note over AST: 同样的流程修改 store.go
+
+    Orch->>Proto: AddRPCMethods(myblog.proto, "Post", grpcServiceName)
+    Proto->>FM: Read myblog.proto
+    Proto->>Proto: protocompile.Parse
+    Proto->>Proto: 添加 5 个 rpc method
+    Proto->>Proto: format → bytes
+    Proto->>FM: Write myblog.proto
+
+    Note over Orch: comment kind 同上重复一遍
+
+    Orch->>FM: Save PROJECT (更新 resources 列表)
+    Orch->>User: 报告：18 created, 3 updated

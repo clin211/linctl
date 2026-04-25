@@ -1,0 +1,45 @@
+%% Stage: Phase 2+ (AST 注入对应 ADR-001 dst-based 实现, Story 2.1)
+%% Last reviewed: 2026-04-25
+%%{init: {'theme':'default'}}%%
+sequenceDiagram
+    autonumber
+    participant Apply as Applier
+    participant Mutator as ASTMutator
+    participant FM as fs.FileManager
+    participant Decor as decorator.Decorator
+    participant File as dst.File
+    participant Parser as parser.ParseExpr
+    participant Restor as decorator.Restorer
+    participant Gofumpt as gofumpt.Source
+
+    Apply->>Mutator: Apply(content)
+    Mutator->>FM: (no read; content 已从 plan 阶段读取)
+
+    Mutator->>Decor: NewDecorator(fset)
+    Mutator->>Decor: Parse(content)
+    Decor-->>Mutator: dst.File
+
+    Note over Mutator,File: 检查目标 (interface/struct/import)<br/>是否已存在
+    Mutator->>File: 遍历 Decls
+    File-->>Mutator: target node 或 nil
+
+    alt target 已存在 (重复)
+        Mutator-->>Apply: (content, modified=false, nil)
+    else target 不存在
+        alt 需要构造表达式 (如 struct method body)
+            Mutator->>Parser: ParseExpr("newPostStore(s.store)")
+            Parser-->>Mutator: ast.Expr
+            Mutator->>Decor: Decorate(expr)
+            Decor-->>Mutator: dst.Expr
+        end
+
+        Mutator->>File: 修改 (Append field/decl/import)
+        Mutator->>Restor: NewRestorer()
+        Mutator->>Restor: Print(file)
+        Restor-->>Mutator: 字节流
+        Mutator->>Gofumpt: Source(bytes)
+        Gofumpt-->>Mutator: formatted bytes
+        Mutator-->>Apply: (formatted, modified=true, nil)
+    end
+
+    Apply->>FM: Write(file, formatted)

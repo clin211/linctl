@@ -1,0 +1,64 @@
+%% Stage: Target
+%% Last reviewed: 2026-04-25
+%% Order 序值按 META-fix-decisions §1.15 调整：UserFeature=100、HealthzFeature=200，避免 Order 碰撞
+%%{init: {'theme':'default'}}%%
+classDiagram
+    class Feature {
+        <<interface>>
+        +Name() string
+        +Requires() []string
+        +AppliesTo() []string
+        +Apply(ctx, c Component) ([]Pair, error)
+        +ResourceContributions(c Component) []Resource
+        +Mutators(p *Project, c Component) []ASTMutator
+        +FuncMap() template.FuncMap
+        +Defaults(p *Project, c Component) map[string]any
+        +Validate(p *Project, c Component) error
+        +Order() int
+    }
+
+    class Registry {
+        -features map[string]Feature
+        +Register(f Feature) error
+        +Get(name string) (Feature, error)
+        +ListAppliesTo(componentKind string) []Feature
+        +ListAll() []Feature
+        +Sorted() []Feature
+    }
+
+    class UserFeature {
+        +Order() = 100
+        +AppliesTo() = ["WebServer"]
+    }
+    class HealthzFeature {
+        +Order() = 200
+        +AppliesTo() = ["WebServer"]
+    }
+    class OpenTelemetryFeature {
+        +Order() = 0
+        +Requires() = ["healthz"]
+        +AppliesTo() = ["WebServer", "Worker"]
+    }
+    class WebSocketFeature {
+        +Order() = 0
+        +AppliesTo() = ["WebServer"]
+    }
+    class PreloaderFeature {
+        +Order() = 0
+        +AppliesTo() = ["WebServer", "Worker"]
+    }
+
+    class CustomPluginFeature {
+        <<plugin>>
+        +Subprocess via JSON-RPC
+        +SerializedMutator
+    }
+
+    Feature <|.. UserFeature
+    Feature <|.. HealthzFeature
+    Feature <|.. OpenTelemetryFeature
+    Feature <|.. WebSocketFeature
+    Feature <|.. PreloaderFeature
+    Feature <|.. CustomPluginFeature
+
+    Registry o-- Feature : 注册

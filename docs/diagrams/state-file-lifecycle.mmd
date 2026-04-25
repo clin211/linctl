@@ -1,0 +1,29 @@
+%% Stage: Target (含 Phase 1 的 Create/Update/Skip 与 Phase 2+ 的 Conflict/Merge 全集)
+%% Last reviewed: 2026-04-25
+%%{init: {'theme':'default'}}%%
+stateDiagram-v2
+    [*] --> NotExist : initial
+
+    NotExist --> Created : linctl apply (Create)
+    Created --> UnchangedOnDisk : 用户没改
+
+    UnchangedOnDisk --> Skip : 模板没变
+    UnchangedOnDisk --> UpdatedByLinctl : 模板更新 + apply
+    UpdatedByLinctl --> UnchangedOnDisk : 重新进入空闲
+
+    UnchangedOnDisk --> UserModified : 用户编辑
+    UserModified --> Conflict : linctl plan 检测到
+    Conflict --> UserKeep : --strategy=skip
+    Conflict --> Overwritten : --strategy=overwrite
+    Conflict --> Merged : --strategy=merge && 成功
+    Conflict --> ConflictMarkers : --strategy=merge && 失败
+
+    UserKeep --> UnchangedOnDisk : 保留用户修改
+    Overwritten --> UnchangedOnDisk : 用模板覆盖
+    Merged --> UnchangedOnDisk : 3-way 合并
+    ConflictMarkers --> [*] : 用户手动解决<br/>下次 plan 重检测
+
+    UnchangedOnDisk --> Deleted : --prune 且 Pair 不再期望
+    Deleted --> [*]
+
+    Skip --> UnchangedOnDisk

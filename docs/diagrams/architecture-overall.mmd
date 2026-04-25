@@ -1,0 +1,72 @@
+%% Stage: Target
+%% Last reviewed: 2026-04-25
+%%{init: {'theme':'default'}}%%
+flowchart TD
+    User([User<br/>开发者]) -->|linctl new/add/plan/apply| CLI
+
+    subgraph L4["L4 - CLI 入口层 (cmd/)"]
+        CLI[cmd/linctl/main.go<br/>cobra Root]
+    end
+
+    subgraph L3["L3 - 命令层 (internal/cli/)"]
+        NewCmd[cmd_new]
+        AddCmd[cmd_add]
+        PlanCmd[cmd_plan]
+        ApplyCmd[cmd_apply]
+        LintCmd[cmd_lint]
+        DoctorCmd[cmd_doctor]
+    end
+
+    subgraph L2["L2 - 业务编排层 (internal/orchestrator/)"]
+        Planner[Planner<br/>计算变更]
+        Applier[Applier<br/>执行变更]
+    end
+
+    subgraph L1["L1 - 核心引擎层"]
+        Loader[Project Loader<br/>internal/project/loader.go<br/>加载&校验 linctl.yaml]
+        FeatReg[Feature<br/>Registry]
+        TplEngine[Template<br/>Engine]
+        Codegen[Codegen<br/>Pipeline]
+        ASTInj[AST<br/>Injector]
+    end
+
+    subgraph L0["L0 - 基础设施层"]
+        FS[fs/<br/>afero+hash]
+        Validator[validate/<br/>validator.v10+JSONSchema]
+        Logger[log/slog<br/>统一日志]
+        Telemetry[telemetry/<br/>opt-in]
+        Sec[security/<br/>SafeJoin/HookExecutor]
+        TplFS[(embed.FS<br/>模板资产)]
+    end
+
+    CLI --> L3
+    NewCmd & AddCmd & PlanCmd & ApplyCmd --> L2
+    LintCmd & DoctorCmd --> Validator
+
+    Planner --> Loader
+    Loader --> Validator
+    Planner --> FeatReg
+    Planner --> Codegen
+    Applier --> Codegen
+    Applier --> ASTInj
+    Applier --> Sec
+
+    Codegen --> TplEngine
+    Codegen --> FS
+    TplEngine --> TplFS
+    ASTInj --> FS
+
+    L1 --> L0
+    L2 --> L0
+
+    classDef l4 fill:#fef3c7,stroke:#f59e0b,color:#92400e
+    classDef l3 fill:#dbeafe,stroke:#3b82f6,color:#1e40af
+    classDef l2 fill:#dcfce7,stroke:#22c55e,color:#166534
+    classDef l1 fill:#fce7f3,stroke:#ec4899,color:#9f1239
+    classDef l0 fill:#e5e7eb,stroke:#6b7280,color:#1f2937
+
+    class CLI l4
+    class NewCmd,AddCmd,PlanCmd,ApplyCmd,LintCmd,DoctorCmd l3
+    class Planner,Applier l2
+    class Loader,FeatReg,TplEngine,Codegen,ASTInj l1
+    class FS,Validator,Logger,Telemetry,TplFS,Sec l0

@@ -1,0 +1,88 @@
+%% Stage: Target
+%% Last reviewed: 2026-04-25
+%% 终态行为：Pair 并发渲染（Phase 2+）；与 seq-new-project.mmd（Phase 1 串行版）对照阅读
+%%{init: {'theme':'default'}}%%
+sequenceDiagram
+    autonumber
+    actor User
+    participant CLI as cli.cmd_new
+    participant Orch as orchestrator
+    participant Loader as project.Loader<br/>(internal/project/loader.go)
+    participant FRegis as feature.Registry
+    participant Sched as feature.Scheduler<br/>(拓扑排序 Requires/Order)
+    participant Comp as component.WebServer
+    participant PB as PairBuilder
+    participant Pool as renderer.Pool<br/>(errgroup + GOMAXPROCS)
+    participant Eng as template.Engine
+    participant FM as fs.FileManager<br/>(flock + atomic write)
+    participant AST as ast.Injector
+    participant Hook as security.HookExecutor<br/>(policy: confirm/restricted)
+    participant PROJ as PROJECT 文件
+
+    User->>CLI: linctl new myblog --module ... --framework gin
+    CLI->>CLI: complete(ctx) + validate(ctx)
+    CLI->>Orch: Plan(ctx) → *Plan
+
+    Orch->>Loader: BuildFromOptions(opts)
+    Loader->>Loader: applyDefaults + validator.v10
+    Loader-->>Orch: *Project
+
+    Orch->>FRegis: RegisterAll()
+    Note over FRegis: 加载所有 builtin Feature
+
+    Orch->>Sched: 计算执行顺序
+    Note over Sched: 1. 收集所有 Feature 的 Requires()<br/>2. Kahn 拓扑排序<br/>3. 同层用 Order 做 tie-break<br/>4. 检测环 → 直接 fail（详见 §8.6.1）
+    Sched-->>Orch: ordered []Feature
+
+    Orch->>Comp: NewWebServer(componentSpec)
+    Comp->>PB: New(project)
+    Comp->>PB: Add(组件自带 Pairs)
+
+    loop for each Feature (按拓扑顺序)
+        Orch->>Comp: feature.Apply(ctx, c) (纯函数)
+        Comp->>PB: AddMany(featurePairs)
+        Orch->>Comp: feature.ResourceContributions(c)
+        Note over Orch: 调度器聚合 Resource，注入 Project（不在 Apply 中改入参）
+    end
+
+    Comp-->>Orch: PairBuilder.Build() → []Pair
+
+    Orch->>FM: AcquireLock(ctx, rootDir, --lock-timeout)
+    Note over FM: 阻塞 + 30s 超时（详见 §6.13）
+
+    Orch->>FM: 准备目标目录 (mkdir -p myblog)
+
+    %% Phase 2+ 终态：Pair 并发渲染
+    par Pair 1 渲染
+        Orch->>Pool: submit Pair[0]
+        Pool->>Eng: Render(tpl, data)
+        Eng-->>Pool: content
+    and Pair 2 渲染
+        Orch->>Pool: submit Pair[1]
+        Pool->>Eng: Render(tpl, data)
+        Eng-->>Pool: content
+    and Pair N 渲染
+        Orch->>Pool: submit Pair[N]
+        Pool->>Eng: Render(tpl, data)
+        Eng-->>Pool: content
+    end
+
+    Note over Pool: 渲染成功的 content 收集到内存；任一失败 → 中止整个 Apply
+
+    %% 串行写入（持 flock，保证原子性）
+    loop for each rendered content (串行写入)
+        Orch->>FM: AtomicWrite(pair.Dst, content)
+    end
+
+    Orch->>AST: 收集 Mutators 并 batch 执行
+    Note over AST: 同一文件多 mutator 合并为单次 parse + 改 + write
+
+    Orch->>Hook: 执行 PostApply hooks
+    Note over Hook: policy=confirm 时逐条 prompt；CI 强制 restricted
+
+    Orch->>PROJ: Save(project, status)
+    Note over PROJ: 写出"工具维护"的 PROJECT 文件（含 generatedAt / cliVersion）
+
+    Orch->>FM: Release()
+    Orch-->>CLI: Apply(ctx, plan) → *Report
+    CLI->>User: 彩色输出 + getting started 提示

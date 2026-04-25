@@ -1,0 +1,89 @@
+%% Stage: Phase 4+ (linctl plan/apply 子命令对应 ADR-004 Tier 2/Tier 3)
+%% Last reviewed: 2026-04-25
+%%{init: {'theme':'default'}}%%
+sequenceDiagram
+    autonumber
+    actor User
+    participant CLI as cli
+    participant Orch as orchestrator
+    participant Plan as Planner
+    participant FM as fs.FileManager
+    participant Apply as Applier
+    participant Merger as 3-way merger
+    participant UI as ui.Confirm
+
+    Note over User,UI: ============ Plan Phase ============
+    User->>CLI: linctl plan
+    CLI->>Orch: Plan(project)
+    Orch->>Plan: Compute()
+
+    loop for each expected Pair
+        Plan->>FM: Read(dst)
+        alt 文件不存在
+            Plan->>Plan: Action = Create
+        else 文件存在
+            Plan->>FM: Hash(dst)
+            FM-->>Plan: diskHash
+            Plan->>FM: ExtractEmbeddedHash(content)
+            FM-->>Plan: embeddedHash, found
+            Plan->>Plan: render content + ComputeHash → newHash
+
+            alt found && embeddedHash == diskHash
+                Note right of Plan: 文件未被人改过
+                alt diskHash == newHash
+                    Plan->>Plan: Action = Skip
+                else
+                    Plan->>Plan: Action = Update<br/>(模板有更新)
+                end
+            else
+                Plan->>Plan: Action = Conflict<br/>(用户改过)
+            end
+        end
+    end
+
+    Plan-->>Orch: *Plan
+    Orch->>UI: PrintPlan(p)
+    UI-->>User: 彩色 plan 表格
+    Note right of User: 用户审阅 plan<br/>决定是否 apply
+
+    Note over User,UI: ============ Apply Phase ============
+    User->>CLI: linctl apply --strategy=merge
+    CLI->>Orch: Apply(project, opts)
+    Orch->>Plan: Compute() (再次)
+    Plan-->>Orch: *Plan (与 plan 命令一致)
+
+    alt Plan 中有 Conflict
+        Orch->>UI: 显示冲突清单
+        loop for each Conflict Action
+            alt strategy = ask
+                Orch->>UI: Confirm(file, options)
+                UI-->>User: [k]eep [o]verwrite [m]erge [d]iff [s]kip [q]uit
+                User-->>UI: 选择
+                UI-->>Orch: choice
+            else strategy = merge
+                Orch->>Merger: Merge3Way(base, current, new)
+                Note right of Merger: base = embeddedHash 对应的<br/>历史模板渲染结果<br/>(从 .linctl/cache/ 读)<br/>或重新渲染
+                Merger-->>Orch: merged content
+                alt 自动 merge 失败
+                    Orch->>UI: 显示 conflict markers，让用户选择
+                end
+            end
+        end
+    end
+
+    Orch->>FM: Backup current files → .linctl/backups/<ts>/
+
+    loop for each Action
+        Orch->>Apply: Execute(action)
+        Apply->>Apply: Render
+        Apply->>Apply: Format
+        Apply->>Apply: AppendHash
+        Apply->>FM: AtomicWrite
+    end
+
+    Orch->>Orch: AST Inject (如有)
+    Orch->>Orch: Run PostApply Hooks (按执行策略 restricted/confirm)
+    Orch->>FM: Save PROJECT
+    Orch->>UI: Report
+
+    UI-->>User: Done. 18 files changed.

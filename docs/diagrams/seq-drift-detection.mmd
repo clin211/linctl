@@ -1,0 +1,61 @@
+%% Stage: Phase 4+ (drift 检测对应 ADR-004 Tier 3)
+%% Last reviewed: 2026-04-25
+%%{init: {'theme':'default'}}%%
+sequenceDiagram
+    autonumber
+    participant Plan as Planner
+    participant FM as fs.FileManager
+    participant Eng as Template Engine
+    participant Lock as .linctl/lock.yaml
+
+    Note over Plan,Lock: ====== Drift 检测算法 ======
+
+    Plan->>Eng: Render(template) + Format
+    Eng-->>Plan: newContent
+    Plan->>Plan: newHash = sha256(newContent)
+
+    Plan->>FM: Read(dst)
+    alt 文件不存在
+        Plan->>Plan: Action = Create
+    else 文件存在
+        FM-->>Plan: diskBytes
+        Plan->>FM: ExtractEmbeddedHash(diskBytes)
+
+        alt 无 hash comment
+            Note right of Plan: 用户拥有的文件<br/>linctl 不动它
+            Plan->>Plan: Action = Skip<br/>(reason: no_hash_comment_user_owned)
+        else 有 hash comment (embeddedHash)
+            Plan->>Plan: diskBodyHash = sha256(strip(diskBytes))
+
+            alt diskBodyHash != embeddedHash
+                Note right of Plan: 用户改过文件
+                Plan->>Plan: Action = Conflict<br/>(reason: user_modified)
+            else diskBodyHash == embeddedHash
+                Note right of Plan: 文件未被人改过
+
+                alt diskHash == newHash
+                    Plan->>Plan: Action = Skip<br/>(reason: unchanged)
+                else
+                    Plan->>Plan: Action = Update<br/>(reason: template_updated)
+                end
+            end
+        end
+    end
+
+    Plan->>Lock: 读 lock.yaml 获取 owner / 历史 hash
+    Note over Lock: 用于 3-way merge<br/>和 prune 决策
+
+    Plan-->>Plan: 输出 Action
+
+    Note over Plan,Lock: ====== 3-way merge 触发 (--strategy=merge) ======
+
+    rect rgba(255,200,200,0.3)
+        Note over Plan,Lock: 当 Action = Conflict 且 strategy = merge
+        Plan->>Lock: 读 base content (embeddedHash 对应的历史渲染)
+        Plan->>Plan: Merge3(base, currentDisk, newRender)
+        alt 无冲突
+            Plan->>Plan: 输出合并结果
+        else 有冲突
+            Plan->>Plan: 生成 git-style conflict markers
+        end
+    end

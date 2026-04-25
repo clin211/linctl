@@ -1,0 +1,52 @@
+%% Stage: Target
+%% Last reviewed: 2026-04-25
+%%{init: {'theme':'default'}}%%
+flowchart LR
+    subgraph L4_pkg["L4: cmd/"]
+        A4["cmd/linctl/main.go"]
+    end
+
+    subgraph L3_pkg["L3: internal/cli/"]
+        A3a["root.go"]
+        A3b["cmd_new.go"]
+        A3c["cmd_add.go"]
+        A3d["cmd_plan.go"]
+        A3e["cmd_apply.go"]
+    end
+
+    subgraph L2_pkg["L2: internal/orchestrator/ (仅编排, 不做 I/O)"]
+        A2a["orchestrator.go"]
+        A2c["importer.go"]
+        A2d["reporter.go"]
+    end
+
+    subgraph L1_pkg["L1: internal/{feature,component,template,codegen,ast,project}"]
+        A1a["feature/"]
+        A1b["component/"]
+        A1c["template/"]
+        A1d["codegen/"]
+        A1e["ast/"]
+        A1f["internal/project/ (loader.go, types.go, defaults.go)"]
+    end
+
+    subgraph L0_pkg["L0: internal/{fs,log,validate,telemetry,ui,security,diag,i18n,version,linctlerr}"]
+        A0a["fs/"]
+        A0b["log/"]
+        A0c["validate/"]
+        A0d["telemetry/"]
+        A0e["ui/"]
+        A0f["security/"]
+        A0h["diag/"]
+        A0i["i18n/"]
+        A0j["version/"]
+        A0g["internal/linctlerr/ (LinctlError, Code; per META §1.1/§5.1)"]
+    end
+
+    L4_pkg --> L3_pkg --> L2_pkg --> L1_pkg --> L0_pkg
+    L4_pkg --> L0_pkg
+    L3_pkg --> L0_pkg
+    L2_pkg --> L0_pkg
+    L1_pkg --> L0_pkg
+
+    classDef layer fill:#f3f4f6,stroke:#6b7280
+    class L0_pkg,L1_pkg,L2_pkg,L3_pkg,L4_pkg layer

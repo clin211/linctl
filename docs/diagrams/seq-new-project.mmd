@@ -1,0 +1,62 @@
+%% Stage: MVP / Phase 1
+%% Last reviewed: 2026-04-25
+%% Phase 1 行为：Pair 串行执行；终态（Phase 2+）的并发渲染请见 architecture-runtime.mmd
+%%{init: {'theme':'default'}}%%
+sequenceDiagram
+    autonumber
+    actor User
+    participant CLI as cli.cmd_new
+    participant Orch as orchestrator
+    participant Loader as project.Loader<br/>(internal/project/loader.go)
+    participant FRegis as feature.Registry
+    participant Comp as component.WebServer
+    participant PB as PairBuilder
+    participant Eng as template.Engine
+    participant FM as fs.FileManager
+    participant AST as ast.Injector
+    participant PROJ as PROJECT 文件
+
+    User->>CLI: linctl new myblog --module ... --framework gin
+    CLI->>CLI: complete + validate
+    CLI->>Orch: NewProject(opts)
+
+    Orch->>Loader: BuildFromOptions(opts)
+    Note over Loader: 用 opts 构造一个完整 Project struct
+    Loader->>Loader: applyDefaults
+    Loader->>Loader: validator.v10
+    Loader-->>Orch: *Project
+
+    Orch->>FRegis: RegisterAll()
+    Note over FRegis: 加载所有 builtin Feature
+
+    Orch->>Comp: NewWebServer(componentSpec)
+    Comp->>PB: New(project)
+    Comp->>PB: Add(组件自带 Pairs)
+
+    loop for each Feature
+        Comp->>FRegis: Get(featureName)
+        FRegis-->>Comp: Feature
+        Comp->>PB: feature.Apply(...)
+    end
+
+    Comp-->>Orch: PairBuilder.Build() → []Pair
+
+    Orch->>FM: 准备目标目录 (mkdir -p myblog)
+
+    %% Phase 1: 串行执行 (与 11-implementation-plan.md Story 1.7 一致)
+    %% 并发优化在 Phase 2 引入 (errgroup + GOMAXPROCS 限速)
+    loop for each Pair (串行, Phase 1)
+        Orch->>Eng: Render(pair.TemplateID, data)
+        Eng->>Eng: parse + execute + format + appendHash
+        Eng-->>Orch: content
+        Orch->>FM: Write(pair.Dst, content)
+    end
+
+    Orch->>AST: 收集 Mutators 并执行
+    Note over AST: new 命令通常无 AST 注入<br/>因为是从零生成
+
+    Orch->>PROJ: Save(project)
+    Note over PROJ: 写出"禁止人工修改"的 PROJECT 文件
+
+    Orch-->>CLI: PlanReport
+    CLI->>User: 彩色输出 + getting started 提示
