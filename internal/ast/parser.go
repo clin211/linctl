@@ -5,7 +5,7 @@ import (
 	"go/parser"
 	"go/token"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
 )

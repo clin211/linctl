@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // Files 是 3-way merge 的三个版本。

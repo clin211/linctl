@@ -1,4 +1,4 @@
-module github.com/clin211/linctl
+module github.com/clin211/lin
 
 go 1.25.0
 

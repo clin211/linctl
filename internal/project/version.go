@@ -7,7 +7,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // Migrator 把某一旧版 apiVersion 的 yaml 字节流升级为下一版本。

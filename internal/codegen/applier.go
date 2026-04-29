@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/clin211/linctl/internal/fs"
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/template"
+	"github.com/clin211/lin/internal/fs"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/template"
 )
 
 // Applier 执行 Plan：按 Action 渲染并写盘。

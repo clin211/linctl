@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 	"gopkg.in/yaml.v3"
 )
 

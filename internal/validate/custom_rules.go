@@ -94,7 +94,7 @@ func validateComponentName(fl validator.FieldLevel) bool {
 func HintForTag(tag string) string {
 	switch tag {
 	case "modulepath":
-		return "Module path must look like 'github.com/<org>/<repo>', e.g. github.com/clin211/linctl."
+		return "Module path must look like 'github.com/<org>/<repo>', e.g. github.com/clin211/lin."
 	case "projectname":
 		return "Project name must be kebab-case: lowercase letters, digits, dashes; 1-40 chars; start with a letter."
 	case "kindname":

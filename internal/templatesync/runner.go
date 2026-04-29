@@ -10,9 +10,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/clin211/linctl/internal/gitmerge"
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/templatesync/transform"
+	"github.com/clin211/lin/internal/gitmerge"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/templatesync/transform"
 )
 
 // LinTemplatesRoot 是 lin 仓库内 web-gin 模板根目录的相对路径（相对 lin/）。

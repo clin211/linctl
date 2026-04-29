@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/clin211/linctl/internal/linctlerr"
-	tpl "github.com/clin211/linctl/internal/template"
+	"github.com/clin211/lin/internal/linctlerr"
+	tpl "github.com/clin211/lin/internal/template"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

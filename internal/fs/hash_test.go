@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	lfs "github.com/clin211/linctl/internal/fs"
+	lfs "github.com/clin211/lin/internal/fs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

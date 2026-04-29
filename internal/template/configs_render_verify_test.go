@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	tpl "github.com/clin211/linctl/internal/template"
+	tpl "github.com/clin211/lin/internal/template"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

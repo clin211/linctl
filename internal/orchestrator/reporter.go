@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/clin211/linctl/internal/codegen"
+	"github.com/clin211/lin/internal/codegen"
 )
 
 // Reporter 把 codegen.Report / Plan 输出给用户。

@@ -60,7 +60,7 @@ const longDescription = `linctl is a declarative, plan/apply-oriented scaffold t
 for Go microservices. It generates idempotent, AST-friendly code that you can
 re-run safely (no overwrites of your changes).
 
-Documentation: https://github.com/clin211/linctl
+Documentation: https://github.com/clin211/lin
 Architecture:  See docs/01-architecture.md
 `
 

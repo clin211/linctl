@@ -3,8 +3,8 @@ package ast
 import (
 	"context"
 
-	"github.com/clin211/linctl/internal/fs"
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/fs"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // Batch 把多个 Mutator 按 File 分组、合并执行。

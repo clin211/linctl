@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // cacheRoot 是 lin 仓库内 base content 缓存的相对路径（相对 lin/）。

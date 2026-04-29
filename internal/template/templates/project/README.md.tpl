@@ -5,7 +5,7 @@
 
 {{ .Project.Metadata.Description | default "由 linctl 生成的 Go 微服务项目。" }}
 
-本项目由 [linctl](https://github.com/clin211/linctl) 脚手架生成，采用企业级分层架构。
+本项目由 [linctl](https://github.com/clin211/lin) 脚手架生成，采用企业级分层架构。
 
 {{ if eq $framework "gin" -}}
 ## 架构概览

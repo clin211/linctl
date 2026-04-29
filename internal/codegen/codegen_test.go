@@ -5,9 +5,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/clin211/linctl/internal/codegen"
-	"github.com/clin211/linctl/internal/fs"
-	"github.com/clin211/linctl/internal/template"
+	"github.com/clin211/lin/internal/codegen"
+	"github.com/clin211/lin/internal/fs"
+	"github.com/clin211/lin/internal/template"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

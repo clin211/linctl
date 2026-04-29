@@ -5,12 +5,12 @@ import (
 	texttemplate "text/template"
 	"testing"
 
-	"github.com/clin211/linctl/internal/ast"
-	"github.com/clin211/linctl/internal/codegen"
-	"github.com/clin211/linctl/internal/feature"
-	"github.com/clin211/linctl/internal/feature/builtin"
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/project"
+	"github.com/clin211/lin/internal/ast"
+	"github.com/clin211/lin/internal/codegen"
+	"github.com/clin211/lin/internal/feature"
+	"github.com/clin211/lin/internal/feature/builtin"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/project"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

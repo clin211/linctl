@@ -37,7 +37,7 @@ type Code string
 //	    "Allowed values: [gin, grpc]")
 //
 //	return linctlerr.Wrap(linctlerr.ErrEnvironment, err, "read linctl.yaml").
-//	    WithDocLink("https://github.com/clin211/linctl/blob/main/lin/docs/04-config-schema.md")
+//	    WithDocLink("https://github.com/clin211/lin/blob/main/lin/docs/04-config-schema.md")
 type LinctlError struct {
 	Code    Code
 	Message string
@@ -70,7 +70,7 @@ func (e *LinctlError) Error() string {
 //
 //	Error: [config_invalid] invalid framework "kratos"
 //	Hint:  Allowed values: [gin, grpc]
-//	Doc:   https://github.com/clin211/linctl/blob/main/lin/docs/04-config-schema.md
+//	Doc:   https://github.com/clin211/lin/blob/main/lin/docs/04-config-schema.md
 func (e *LinctlError) Pretty(noColor bool) string {
 	if e == nil {
 		return ""

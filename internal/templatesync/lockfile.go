@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // 当前 lockfile 格式版本。

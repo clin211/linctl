@@ -5,7 +5,7 @@
 ## 开发环境
 
 ```bash
-git clone https://github.com/clin211/linctl.git
+git clone https://github.com/clin211/lin.git
 cd linctl
 make tools     # 安装 pin 版本的工具链
 make all       # lint + test + build

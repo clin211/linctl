@@ -9,7 +9,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // projectFileHeader 是写入 PROJECT 文件顶部的禁止人工修改头注释。
@@ -20,7 +20,7 @@ const projectFileHeader = `# DO NOT EDIT MANUALLY.
 # This file (PROJECT) is maintained by linctl. To modify project configuration,
 # update linctl.yaml and run 'linctl plan' / 'linctl apply'.
 #
-# Linctl docs: https://github.com/clin211/linctl
+# Linctl docs: https://github.com/clin211/lin
 `
 
 // nowFunc 返回当前时间字符串（RFC3339）。它是一个**变量**而非函数，

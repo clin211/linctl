@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/clin211/linctl/internal/validate"
+	"github.com/clin211/lin/internal/validate"
 )
 
 func newRawValidator(t *testing.T) *validator.Validate {
@@ -34,7 +34,7 @@ func TestModulePath_Valid(t *testing.T) {
 	v := newRawValidator(t)
 	cases := []string{
 		"github.com/foo/bar",
-		"github.com/clin211/linctl",
+		"github.com/clin211/lin",
 		"gitlab.example.org/group/sub/proj",
 		"go.opentelemetry.io/otel",
 		"k8s.io/api/core/v1",

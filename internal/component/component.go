@@ -9,9 +9,9 @@
 package component
 
 import (
-	"github.com/clin211/linctl/internal/ast"
-	"github.com/clin211/linctl/internal/codegen"
-	"github.com/clin211/linctl/internal/project"
+	"github.com/clin211/lin/internal/ast"
+	"github.com/clin211/lin/internal/codegen"
+	"github.com/clin211/lin/internal/project"
 )
 
 // FileSystem 是 Component.PostProcess 对文件系统的访问抽象。

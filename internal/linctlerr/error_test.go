@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

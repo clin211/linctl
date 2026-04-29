@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/project"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/project"
 )
 
 func newSampleProject() *project.Project {

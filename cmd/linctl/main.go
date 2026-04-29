@@ -14,8 +14,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/clin211/linctl/internal/cli"
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/cli"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 func main() {

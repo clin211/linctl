@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // FieldIssue 是单条字段校验失败的结构化描述。

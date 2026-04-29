@@ -13,7 +13,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // RuntimeContext 是 transform 执行时的运行时上下文。

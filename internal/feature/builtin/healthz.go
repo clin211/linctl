@@ -8,9 +8,9 @@ import (
 	"context"
 	texttemplate "text/template"
 
-	"github.com/clin211/linctl/internal/ast"
-	"github.com/clin211/linctl/internal/codegen"
-	"github.com/clin211/linctl/internal/project"
+	"github.com/clin211/lin/internal/ast"
+	"github.com/clin211/lin/internal/codegen"
+	"github.com/clin211/lin/internal/project"
 )
 
 // HealthzFeature 注入 /healthz 端点（最小开销，几乎所有 Web 服务都需要）。

@@ -10,7 +10,7 @@ import (
 	"sync"
 	texttemplate "text/template"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // Engine 是 linctl 的模板渲染引擎。

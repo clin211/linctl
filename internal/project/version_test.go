@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/project"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/project"
 )
 
 const v1alpha1Yaml = `apiVersion: linctl.dev/v1alpha1

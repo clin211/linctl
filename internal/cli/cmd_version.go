@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/version"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/version"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )

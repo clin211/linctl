@@ -15,13 +15,13 @@ import (
 	"context"
 	"sort"
 
-	"github.com/clin211/linctl/internal/codegen"
-	"github.com/clin211/linctl/internal/component"
-	"github.com/clin211/linctl/internal/feature"
-	"github.com/clin211/linctl/internal/fs"
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/project"
-	"github.com/clin211/linctl/internal/template"
+	"github.com/clin211/lin/internal/codegen"
+	"github.com/clin211/lin/internal/component"
+	"github.com/clin211/lin/internal/feature"
+	"github.com/clin211/lin/internal/fs"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/project"
+	"github.com/clin211/lin/internal/template"
 )
 
 // Orchestrator 编排 Plan → Apply 流程。

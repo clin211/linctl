@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/templatesync"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/templatesync"
 	"github.com/spf13/cobra"
 )
 

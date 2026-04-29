@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/clin211/linctl/internal/project"
+	"github.com/clin211/lin/internal/project"
 )
 
 func TestStatus_IsEmpty_TrueByDefault(t *testing.T) {

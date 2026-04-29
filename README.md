@@ -1,7 +1,7 @@
 # linctl
 
-[![CI](https://github.com/clin211/linctl/actions/workflows/ci.yml/badge.svg)](https://github.com/clin211/linctl/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/clin211/linctl.svg)](https://pkg.go.dev/github.com/clin211/linctl)
+[![CI](https://github.com/clin211/lin/actions/workflows/ci.yml/badge.svg)](https://github.com/clin211/lin/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/clin211/lin.svg)](https://pkg.go.dev/github.com/clin211/lin)
 
 > **声明式、Plan/Apply 范式的 Go 微服务脚手架。** ✨
 >
@@ -11,7 +11,7 @@
 
 ```bash
 # 通过 Go 安装（Phase 1 完成）
-go install github.com/clin211/linctl/cmd/linctl@latest
+go install github.com/clin211/lin/cmd/linctl@latest
 
 # 查看版本
 linctl version --output json

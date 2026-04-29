@@ -15,9 +15,9 @@ import (
 	"context"
 	texttemplate "text/template"
 
-	"github.com/clin211/linctl/internal/ast"
-	"github.com/clin211/linctl/internal/codegen"
-	"github.com/clin211/linctl/internal/project"
+	"github.com/clin211/lin/internal/ast"
+	"github.com/clin211/lin/internal/codegen"
+	"github.com/clin211/lin/internal/project"
 )
 
 // Feature 是横向能力的统一接口。

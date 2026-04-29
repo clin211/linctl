@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/templatesync"
-	"github.com/clin211/linctl/internal/version"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/templatesync"
+	"github.com/clin211/lin/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -115,7 +115,7 @@ func isLinRoot(dir string) bool {
 	if err != nil {
 		return false
 	}
-	// 简单判断：第一行 "module github.com/clin211/linctl"
+	// 简单判断：第一行 "module github.com/clin211/lin"
 	for i := 0; i < len(data); i++ {
 		if data[i] == '\n' {
 			break

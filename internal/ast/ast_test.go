@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	last "github.com/clin211/linctl/internal/ast"
+	last "github.com/clin211/lin/internal/ast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

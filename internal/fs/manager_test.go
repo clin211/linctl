@@ -7,8 +7,8 @@ import (
 	"sort"
 	"testing"
 
-	lfs "github.com/clin211/linctl/internal/fs"
-	"github.com/clin211/linctl/internal/linctlerr"
+	lfs "github.com/clin211/lin/internal/fs"
+	"github.com/clin211/lin/internal/linctlerr"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

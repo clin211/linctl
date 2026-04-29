@@ -3,9 +3,9 @@ package codegen
 import (
 	"context"
 
-	"github.com/clin211/linctl/internal/fs"
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/template"
+	"github.com/clin211/lin/internal/fs"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/template"
 )
 
 // Planner 负责把 Pair 集合转换为 Plan：

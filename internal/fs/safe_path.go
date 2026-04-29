@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // SafeJoin 把 rel 拼到 rootDir 下，并校验结果仍在 rootDir 子树内。

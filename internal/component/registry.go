@@ -4,7 +4,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // Factory 创建一个 Component 实例（基于 YAML struct）。

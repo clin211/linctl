@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/clin211/linctl/internal/component"
-	"github.com/clin211/linctl/internal/feature"
-	"github.com/clin211/linctl/internal/feature/builtin"
-	"github.com/clin211/linctl/internal/fs"
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/orchestrator"
-	"github.com/clin211/linctl/internal/project"
-	"github.com/clin211/linctl/internal/template"
+	"github.com/clin211/lin/internal/component"
+	"github.com/clin211/lin/internal/feature"
+	"github.com/clin211/lin/internal/feature/builtin"
+	"github.com/clin211/lin/internal/fs"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/orchestrator"
+	"github.com/clin211/lin/internal/project"
+	"github.com/clin211/lin/internal/template"
 	"github.com/spf13/cobra"
 )
 

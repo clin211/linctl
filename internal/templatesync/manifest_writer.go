@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // AppendFileEntry 把一个新的 file 映射追加到 sync.yaml 的 files: 块末尾。

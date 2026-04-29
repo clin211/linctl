@@ -10,8 +10,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/validate"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/validate"
 )
 
 // Loader 负责把 `linctl.yaml` 字节流解析为 *Project：

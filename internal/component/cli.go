@@ -3,10 +3,10 @@ package component
 import (
 	"sort"
 
-	"github.com/clin211/linctl/internal/ast"
-	"github.com/clin211/linctl/internal/codegen"
-	"github.com/clin211/linctl/internal/linctlerr"
-	"github.com/clin211/linctl/internal/project"
+	"github.com/clin211/lin/internal/ast"
+	"github.com/clin211/lin/internal/codegen"
+	"github.com/clin211/lin/internal/linctlerr"
+	"github.com/clin211/lin/internal/project"
 )
 
 // CLIKind 是独立 CLI 工具组件的注册 Kind。

@@ -4,7 +4,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 )
 
 // Registry 是 Feature 的全局注册中心。

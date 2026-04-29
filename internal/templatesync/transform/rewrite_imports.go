@@ -9,7 +9,7 @@ import (
 	"go/token"
 	"strings"
 
-	"github.com/clin211/linctl/internal/linctlerr"
+	"github.com/clin211/lin/internal/linctlerr"
 	"golang.org/x/tools/go/ast/astutil"
 )
 

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/clin211/linctl/internal/cli"
-	"github.com/clin211/linctl/internal/version"
+	"github.com/clin211/lin/internal/cli"
+	"github.com/clin211/lin/internal/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
