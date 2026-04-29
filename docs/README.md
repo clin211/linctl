@@ -22,7 +22,7 @@
 | 09 | [component-design.md](./09-component-design.md) | 组件抽象：WebServer/Worker/CLI 三种内置组件 | 核心开发 |
 | 10 | [tech-stack.md](./10-tech-stack.md) | 技术栈与依赖选型 + 平台支持 + 体积预算 | 核心开发 |
 | 11 | [implementation-plan.md](./11-implementation-plan.md) | 5 阶段详细实施计划与任务拆分 | 项目经理、核心开发 |
-| 12 | [testing-strategy.md](./12-testing-strategy.md) | 测试策略：单测、集成、Snapshot、E2E + GitHub Actions | 核心开发、QA |
+| 12 | [testing-strategy.md](./12-testing-strategy.md) | 测试策略：单测、集成、E2E + GitHub Actions | 核心开发、QA |
 | 13 | [coding-standards.md](./13-coding-standards.md) | 编码规范：命名、错误、日志、注释、PR 规范 + i18n 策略 | 所有开发 |
 | 14 | [observability.md](./14-observability.md) | 可观测性：日志/trace/profile + diagnostic + telemetry | 核心开发 |
 | 15 | [security-model.md](./15-security-model.md) | 安全模型：威胁建模、Hook 执行策略、SSTI 防护、插件信任 | 核心开发、安全 |
@@ -74,7 +74,7 @@
 5. **幂等（Idempotent）**：重复执行同样的命令产生同样的结果（基于 hash 比对）。
 6. **零硬编码**：拒绝任何对作者本机路径、版本号、环境的依赖。
 7. **零状态外发**：遥测 opt-in，且永不上传项目内容。
-8. **测试先行**：核心生成路径 100% 单测覆盖，模板 snapshot 测试，端到端 `go build` 验证。
+8. **测试先行**：核心生成路径 100% 单测覆盖（含 component / template 包内的渲染断言），端到端 `go build` 验证。
 9. **安全默认**：Hook 执行策略（restricted/confirm/unrestricted 三级；本地默认 confirm，CI 强制 restricted），模板严格模式，路径强制 SafeJoin（详见 [15-security-model.md](./15-security-model.md)）。
 10. **可观测性内建**：`--debug=*` 模块化 trace + `linctl profile` 性能分析（详见 [14-observability.md](./14-observability.md)）。
 
@@ -91,20 +91,20 @@
 | 错误处理 | 部分 `fmt.Printf` 吞错 | 统一 `error wrapping`，CheckErr 统一 exit | - |
 | 日志 | klog + apex/log + fmt 混用 | 统一 `log/slog` | - |
 | Hook 安全 | 任意 shell 执行 | Hook 执行策略：白名单 + 用户确认 + CI 强制 restricted | - |
-| 测试 | shell 脚本 e2e | Go 表驱动 + MemMapFs + snapshot + 真实 `go build` | - |
+| 测试 | shell 脚本 e2e | Go 表驱动 + MemMapFs + 真实 `go build` | - |
 | 遥测 | 无 opt-out | opt-in，可一键关闭 | - |
 | 依赖体积 | ~45 直接 + ~160 间接 | ~13 直接 + ~50 间接（去除 k8s 大坨） | - |
 | 二进制大小 | ~20 MB | 目标 ~12 MB | - |
 
 ## 路线图速览
 
-| Phase | 周期 | 目标 |
-| --- | --- | --- |
-| Phase 1 | 3-4 周 | MVP：`new` + `add api` + gin + memory + gorm-postgres + 基础 Feature（sqlite/gorm-mysql/mongo 在 Phase 3 引入，详见 [§11.2.0](./11-implementation-plan.md#1120-phase-1-范围声明与-schema-的差异)） |
-| Phase 2 | 2-3 周 | AST 注入强化 + Snapshot 测试 + 3-way merge base |
-| Phase 3 | 2-3 周 | gRPC 全支持 + Worker（Job+MQ 合并）+ Docker/K8s/systemd |
-| Phase 4 | 2-3 周 | `plan`/`apply` + drift 检测 + 交互式合并 |
-| Phase 5 | 长尾 | 插件机制（kubectl 风格）+ 第三方 Feature 生态 |
+| Phase | 周期 | 状态 | 目标 |
+| --- | --- | --- | --- |
+| Phase 1 | 3-4 周 | ✅ **核心闭环已完成（2026-04-25）** | MVP：`new` + gin + memory/gorm-postgres + healthz Feature；E2E 实测通过（详见 [§11.2.3](./11-implementation-plan.md#1123-phase-1-退出标准实际达成情况)） |
+| Phase 2 | 2-3 周 | ⏳ 计划中 | AST 注入强化 + 测试基础设施 + 3-way merge base |
+| Phase 3 | 2-3 周 | ⏳ 计划中 | gRPC 全支持 + Worker（Job+MQ 合并）+ Docker/K8s/systemd |
+| Phase 4 | 2-3 周 | ⏳ 计划中 | `plan`/`apply` + drift 检测 + 交互式合并 |
+| Phase 5 | 长尾 | ⏳ 计划中 | 插件机制（kubectl 风格）+ 第三方 Feature 生态 |
 
 详见 [11-implementation-plan.md](./11-implementation-plan.md)。
 

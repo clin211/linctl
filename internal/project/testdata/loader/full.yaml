@@ -1,0 +1,87 @@
+apiVersion: linctl.dev/v1
+kind: Project
+
+metadata:
+  name: miniblog
+  module: github.com/clin211/miniblog
+  description: A production-grade blog service.
+  author:
+    name: 长林啊
+    email: 767425412lin@gmail.com
+  labels:
+    team: platform
+    domain: content
+    cost-center: bu-content
+
+spec:
+  defaults:
+    framework: gin
+    storage: gorm-postgres
+    deploy: kubernetes
+    makefile: structured
+    protoVersion: v1
+    image:
+      registryPrefix: ghcr.io/clin211
+      dockerfileMode: combined
+      distrolessMode: always
+    docs:
+      languages: [zh-CN, en-US]
+    telemetry:
+      logging: slog
+      metrics: prometheus
+      tracing: otlp
+
+  components:
+    - kind: WebServer
+      name: mb-apiserver
+      features: [healthz, opentelemetry, user, websocket, preloader]
+      port: 5555
+      registry: nacos
+      clients: [fake, oss]
+      resources:
+        - name: post
+        - name: comment
+        - name: tag
+        - name: user
+
+    - kind: WebServer
+      name: mb-adminserver
+      framework: grpc
+      grpcPort: 6666
+      features: [healthz, opentelemetry, user]
+
+    - kind: Worker
+      name: mb-worker
+      features: [opentelemetry, preloader]
+      variants: [cron, kafka, customized]
+      cron:
+        jobs:
+          - name: dailyReport
+          - name: dataSync
+      kafka:
+        brokers: ["kafka:9092"]
+        topics:
+          - name: orderCreated
+          - name: userRegistered
+      customized:
+        - name: llmtrain
+
+    - kind: CLI
+      name: mbctl
+      commands:
+        - name: get
+        - name: create
+        - name: describe
+        - name: version
+
+  hooks:
+    preApply:
+      - name: format-go
+        run: gofumpt -w .
+        policy: restricted
+    postApply:
+      - name: tidy
+        run: go mod tidy
+      - name: protoc
+        run: make protoc
+        policy: restricted

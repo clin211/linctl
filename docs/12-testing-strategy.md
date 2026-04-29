@@ -10,7 +10,6 @@ linctl 是**会被无数项目依赖**的代码生成工具，**任何 bug 都�
 | --- | --- |
 | **测试金字塔倒置不可接受** | 单测占 70%；集成 20%；E2E 10% |
 | **生成的代码必须 go build 通过** | E2E 强制 `go build ./...` + `go test ./...` |
-| **模板必须有 golden file** | snapshot 测试 100% 覆盖核心模板 |
 | **AST 操作必须有边界 case 测试** | 表驱动 + 至少覆盖：empty / 已存在 / 含注释 / 含泛型 |
 | **失败信息必须 actionable** | 每个 assertion 失败都给出"应该是 X，实际是 Y" |
 
@@ -20,7 +19,7 @@ linctl 是**会被无数项目依赖**的代码生成工具，**任何 bug 都�
 flowchart TD
     E2E["E2E (10%)<br/>真实 go build · 完整 CLI<br/>~50 个 case · 跑 10-30 min"]
     Integration["Integration (20%)<br/>MemFS · 多命令组合<br/>~80 个 case · 跑 30-60 sec"]
-    Unit["Unit (70%)<br/>单文件 · 表驱动 · pure<br/>含 snapshot/golden 测试<br/>~700+ 个 case · 跑 10-20 sec"]
+    Unit["Unit (70%)<br/>单文件 · 表驱动 · pure<br/>~700+ 个 case · 跑 10-20 sec"]
 
     Unit --> Integration --> E2E
 
@@ -32,10 +31,6 @@ flowchart TD
     class Integration l2
     class E2E l3
 ```
-
-> **关于 snapshot 测试的归类**：snapshot/golden 测试本质是「单文件 + 纯函数 + 可重现」的单测，
-> 因此**归并入 Unit 70%**，不再单独占比。本节后文 §12.5 描述的实现机制和 golden 文件治理仍然适用，
-> 只是不再在金字塔中单独列层。
 
 ## 12.3 单元测试（Unit Tests，70%）
 
@@ -170,76 +165,16 @@ func TestNewThenAddAPI(t *testing.T) {
 }
 ```
 
-## 12.5 Snapshot 测试（归并入 Unit，单独成节描述实现）
-
-> 按 §12.2 的金字塔，snapshot/golden 测试本身是 Unit 的一种形式（pure / 单文件 / 可重现），
-> 不再单独占比。本节描述其实现规范、golden 文件治理与 `UPDATE_GOLDEN` 工作流。
+## 12.5 E2E 测试（10%）
 
 ### 12.5.1 范围
-
-- **位置**：`tests/snapshot/`
-- **目的**：检测模板渲染输出是否符合预期（防止意外变更）
-- **golden 存放**：`tests/snapshot/golden/<scenario>/<file>.golden`
-- **更新方式**：`UPDATE_GOLDEN=1 go test ./tests/snapshot/`
-
-### 12.5.2 实现框架
-
-```go
-// tests/snapshot/helper.go
-package snapshot
-
-import (
-    "bytes"
-    "os"
-    "path/filepath"
-    "testing"
-
-    "github.com/stretchr/testify/require"
-)
-
-// AssertGolden 比较 got 与 golden file 内容。
-//
-// UPDATE_GOLDEN=1 模式下：
-//   - 写入 golden file（确保父目录存在）
-//   - 仍然继续执行后续断言（不调用 t.Skip）
-//   - 这样同包内其他与 golden 无关的断言不会被误跳过
-//
-// 想"只更新 golden 而不跑测试"时，请使用独立 Make 目标：
-//
-//     make test-snapshot-update    # 通过 -run 'TestGolden_' 的命名约定隔离
-func AssertGolden(t *testing.T, goldenPath string, got []byte) {
-    t.Helper()
-    if os.Getenv("UPDATE_GOLDEN") == "1" {
-        require.NoError(t, os.MkdirAll(filepath.Dir(goldenPath), 0o755))
-        require.NoError(t, os.WriteFile(goldenPath, got, 0o644))
-        // 不调用 t.Skip：避免跳过同测试函数后续与 golden 无关的断言
-        t.Logf("UPDATE_GOLDEN: wrote %s", goldenPath)
-        return
-    }
-    want, err := os.ReadFile(goldenPath)
-    require.NoError(t, err, "golden file not found: %s", goldenPath)
-    require.Equal(t, string(want), string(got),
-        "golden mismatch: %s\nrun UPDATE_GOLDEN=1 to update", goldenPath)
-}
-```
-
-### 12.5.3 golden file 管理规范
-
-- **审查**：第一次创建 golden 必须人工审查（PR review 时仔细看）。
-- **更新**：模板变更 → 更新 golden → 检查 diff 是否合理 → 提交。
-- **大型文件**：> 1000 行的 golden 拆分（避免 PR diff 难看）。
-- **跨平台**：用 `filepath.ToSlash` 统一路径分隔符；CRLF/LF 统一处理。
-
-## 12.6 E2E 测试（10%）
-
-### 12.6.1 范围
 
 - **位置**：`tests/e2e/`
 - **特点**：真实文件系统；调用编译好的 `linctl` 二进制；触发真实 `go build`/`go test`。
 - **运行时间**：每个 case 30 秒-2 分钟；总 ≤ 30 分钟。
 - **频率**：CI 每次 PR；本地手动。
 
-### 12.6.2 典型 E2E
+### 12.5.2 典型 E2E
 
 ```go
 // tests/e2e/new_project_test.go
@@ -300,7 +235,7 @@ func linctlBin(t *testing.T) string {
 }
 ```
 
-### 12.6.3 矩阵测试
+### 12.5.3 矩阵测试
 
 E2E 跑一个**配置矩阵**，覆盖关键组合：
 
@@ -340,9 +275,9 @@ func TestMatrix(t *testing.T) {
 }
 ```
 
-## 12.7 性能测试（Benchmark）
+## 12.6 性能测试（Benchmark）
 
-### 12.7.1 关键路径 benchmark
+### 12.6.1 关键路径 benchmark
 
 ```go
 // internal/template/engine_bench_test.go
@@ -363,7 +298,7 @@ func BenchmarkEngineRender(b *testing.B) {
 // 失败阈值：> 5ms（标记 perf regression）
 ```
 
-### 12.7.2 Benchmark 跑分
+### 12.6.2 Benchmark 跑分
 
 CI 加 `bench-compare`：
 
@@ -375,7 +310,7 @@ go test -bench=. -count=5 -benchmem ./... > old.bench
 benchstat old.bench new.bench
 ```
 
-## 12.8 模糊测试（Fuzzing）
+## 12.7 模糊测试（Fuzzing）
 
 针对 parser / validator 等"接受外部输入"的代码：
 
@@ -402,7 +337,7 @@ spec:
 
 CI 中以低预算运行（`-fuzz=Fuzz -fuzztime=30s`）。
 
-## 12.9 覆盖率目标
+## 12.8 覆盖率目标
 
 | 包 | 目标 | 必须 ≥ |
 | --- | --- | --- |
@@ -429,14 +364,14 @@ coverage:
     }'
 ```
 
-## 12.10 Flaky 测试治理
+## 12.9 Flaky 测试治理
 
-### 12.10.1 识别
+### 12.9.1 识别
 
 - 自动：`go test -count=10` 在 PR CI 跑指定 packages，failure rate > 0 标记。
 - 手动：CI failure 列表中"间歇性失败"的 case。
 
-### 12.10.2 处理
+### 12.9.2 处理
 
 | 步骤 | 操作 |
 | --- | --- |
@@ -445,16 +380,16 @@ coverage:
 | 3. 修复 | 通常是：未释放资源 / 时序依赖 / 并发竞争 |
 | 4. 加固 | 加 `goleak.VerifyNone(t)` 检测 goroutine 泄漏 |
 
-### 12.10.3 严禁
+### 12.9.3 严禁
 
 - ❌ 用 `time.Sleep` 等待 → 改用 `eventually` poll
 - ❌ 用绝对时间 → 注入 `now func() time.Time`
 - ❌ 用全局变量 → t.TempDir / t.Cleanup
 - ❌ 测试间互相影响 → 每个测试独立 fixture
 
-## 12.11 GitHub Actions 工作流
+## 12.10 GitHub Actions 工作流
 
-### 12.11.1 文件结构
+### 12.10.1 文件结构
 
 ```
 .github/
@@ -470,7 +405,7 @@ coverage:
         └── action.yml      # 复用：安装 protoc / buf / wire
 ```
 
-### 12.11.2 ci.yml（PR 主流程）
+### 12.10.2 ci.yml（PR 主流程）
 
 ```yaml
 name: CI
@@ -561,7 +496,7 @@ jobs:
           test $SIZE -lt 15728640
 ```
 
-### 12.11.3 e2e.yml（独立工作流，可独立触发）
+### 12.10.3 e2e.yml（独立工作流，可独立触发）
 
 ```yaml
 name: E2E
@@ -594,7 +529,7 @@ jobs:
         run: go test -v ./tests/e2e/ -run "Test.*${{ matrix.scenario }}" -timeout=10m
 ```
 
-### 12.11.4 nightly.yml
+### 12.10.4 nightly.yml
 
 ```yaml
 name: Nightly
@@ -640,7 +575,7 @@ jobs:
           # TODO: 与基线对比，显著回归则失败
 ```
 
-### 12.11.5 release.yml
+### 12.10.5 release.yml
 
 ```yaml
 name: Release
@@ -673,7 +608,7 @@ jobs:
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 ```
 
-### 12.11.6 codeql.yml
+### 12.10.6 codeql.yml
 
 ```yaml
 name: CodeQL
@@ -695,9 +630,9 @@ jobs:
       - uses: github/codeql-action/analyze@v3
 ```
 
-## 12.12 本地开发的快速反馈
+## 12.11 本地开发的快速反馈
 
-### 12.12.1 Makefile 目标
+### 12.11.1 Makefile 目标
 
 ```makefile
 .PHONY: dev-test
@@ -708,20 +643,12 @@ dev-test:  ## 快速反馈循环：仅跑当前包 + race
 test:  ## 全单测 + integration（< 1 min）
     @go test -race -short ./...
 
-.PHONY: test-snapshot
-test-snapshot:
-    @go test -v ./tests/snapshot/...
-
-.PHONY: test-snapshot-update
-test-snapshot-update:
-    @UPDATE_GOLDEN=1 go test ./tests/snapshot/...
-
 .PHONY: test-e2e
 test-e2e: build  ## E2E（10-30 min）
     @go test -v ./tests/e2e/... -timeout=30m
 
 .PHONY: test-all
-test-all: test test-snapshot test-e2e
+test-all: test test-e2e
 
 .PHONY: coverage
 coverage:
@@ -730,7 +657,7 @@ coverage:
     @open _output/coverage.html
 ```
 
-### 12.12.2 git pre-commit hook（lefthook 推荐）
+### 12.11.2 git pre-commit hook（lefthook 推荐）
 
 ```yaml
 # lefthook.yml
@@ -751,9 +678,9 @@ pre-push:
       run: make test
 ```
 
-## 12.13 测试数据治理
+## 12.12 测试数据治理
 
-### 12.13.1 fixtures 组织
+### 12.12.1 fixtures 组织
 
 ```
 tests/fixtures/
@@ -775,7 +702,7 @@ tests/fixtures/
     └── streaming.proto
 ```
 
-### 12.13.2 使用 testdata 目录
+### 12.12.2 使用 testdata 目录
 
 Go 标准约定：`testdata/` 目录被 `go test` 工具忽略，专门放测试 fixture：
 
@@ -791,7 +718,7 @@ func loadFixture(t *testing.T, name string) []byte {
 }
 ```
 
-## 12.14 测试反模式（禁止）
+## 12.13 测试反模式（禁止）
 
 | 反模式 | 原因 | 替代 |
 | --- | --- | --- |
@@ -803,7 +730,7 @@ func loadFixture(t *testing.T, name string) []byte {
 | 直接打开 `os.Stdout` 验证输出 | 不能并发 | inject `io.Writer` |
 | 测试间共享 testdata 路径 | 修改 fixture 互相干扰 | 复制到 `t.TempDir()` |
 
-## 12.15 Open Questions
+## 12.14 Open Questions
 
 | 问题 | 待决议 |
 | --- | --- |

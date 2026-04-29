@@ -1,0 +1,9 @@
+apiVersion: linctl.dev/v9
+kind: Project
+metadata:
+  name: hello
+  module: github.com/foo/hello
+spec:
+  components:
+    - kind: WebServer
+      name: hello

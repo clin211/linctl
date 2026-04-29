@@ -1,0 +1,31 @@
+# Build artifacts
+_output/
+dist/
+*.test
+*.out
+coverage.html
+
+# Editor/IDE
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Go workspace files
+go.work
+go.work.sum
+
+# linctl runtime files (NOT for linctl itself; only relevant when using linctl in a project)
+.linctl/lock
+.linctl/backups/
+.linctl/cache/
+
+# Profiling output
+*.pprof
+
+# Local env / secrets
+.env
+.env.local
+*.key
+*.pem

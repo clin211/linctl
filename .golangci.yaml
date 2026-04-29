@@ -1,0 +1,101 @@
+# golangci-lint configuration for linctl
+# Aligned with docs/13-coding-standards.md §13.13 (工具链强制)
+#
+# Pinned version: v1.59.1 (see Makefile GOLANGCI_VERSION)
+
+run:
+  timeout: 5m
+  tests: true
+  go: "1.22"
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck      # 未处理的 error
+    - gosimple      # 简化代码
+    - govet         # go vet
+    - ineffassign   # 无效赋值
+    - staticcheck   # 静态分析
+    - unused        # 未使用的代码
+    - typecheck     # 类型检查（默认）
+    - misspell      # 拼写错误
+    - gofumpt       # 严格格式化
+    - goimports     # import 排序
+    - revive        # 替代 golint
+    - bodyclose     # http.Body 未关闭
+    - rowserrcheck  # sql.Rows.Err() 未检查
+    - exportloopref # 循环变量逃逸
+    - prealloc      # slice 预分配
+    - unconvert     # 多余类型转换
+    - dupl          # 代码重复
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+
+  revive:
+    severity: warning
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+        disabled: true  # 太严格，影响接口实现
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  goimports:
+    local-prefixes: github.com/clin211/linctl
+
+  misspell:
+    locale: US
+
+  dupl:
+    threshold: 150
+
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: true
+
+issues:
+  exclude-dirs:
+    - _output
+    - templates  # template files are not Go
+  exclude-rules:
+    # 测试文件可以更宽松
+    - path: _test\.go
+      linters:
+        - dupl
+        - errcheck
+        - gosec
+
+    # 生成代码或骨架文件
+    - path: internal/version/version\.go
+      linters:
+        - gochecknoglobals
+        - revive
+      text: "exported var (Version|Commit|BuildDate)"
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false

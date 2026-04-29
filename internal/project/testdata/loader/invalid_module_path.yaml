@@ -1,0 +1,9 @@
+apiVersion: linctl.dev/v1
+kind: Project
+metadata:
+  name: hello
+  module: not-a-valid-module
+spec:
+  components:
+    - kind: WebServer
+      name: hello

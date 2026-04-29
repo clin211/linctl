@@ -135,7 +135,7 @@
 
 ### Engine (Template Engine)
 
-- **Definition**：linctl 的模板渲染引擎。封装 `text/template` 的解析、FuncMap 注入、partial 加载、缓存、格式化等。
+- **Definition**：linctl 的模板渲染引擎。封装 `text/template` 的解析、FuncMap 注入、缓存、格式化等。每个业务模板独立 Parse，缓存到 `sync.Map`。
 - **Used in**：`internal/template/engine.go`、`05-template-system.md` 5.5
 
 ---
@@ -410,16 +410,6 @@
 
 - **Definition**：Go 1.21+ 标准库的结构化日志（`log/slog`）。linctl 使用 slog 作为唯一日志框架，自定义彩色 handler。
 - **Used in**：`internal/log/`、`02-project-structure.md`
-
-### Snapshot Test
-
-- **Definition**：linctl 测试模板渲染输出的方式：把模板渲染结果与 golden file 对比。通过 `UPDATE_GOLDEN=1` 环境变量更新 golden。
-- **Used in**：`tests/snapshot/`、`05-template-system.md` 5.11、`12-testing-strategy.md`
-- **See also**：[Golden File](#golden-file)
-
-### Golden File
-
-- **Definition**：[Snapshot Test](#snapshot-test) 的"标准答案"，存于 `tests/snapshot/golden/`，由人工审查后提交到 git。
 
 ### SSTI
 

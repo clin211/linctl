@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint (golangci-lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Install gofumpt (pinned, per §10.7)
+        run: go install mvdan.cc/gofumpt@v0.7.0
+
+      - name: gofumpt check
+        run: |
+          gofumpt -l . | tee /tmp/gofumpt.out
+          test ! -s /tmp/gofumpt.out
+
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.59.1
+          args: --timeout=5m
+
+  test:
+    name: Test (race + coverage)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Run tests with race detector
+        run: |
+          mkdir -p _output/coverage
+          go test -race -cover -coverprofile=_output/coverage/coverage.out ./...
+
+      - name: Coverage summary
+        run: go tool cover -func=_output/coverage/coverage.out | tail -1
+
+  build:
+    name: Build (default + otel)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Build default binary
+        run: go build -trimpath -o _output/bin/linctl ./cmd/linctl
+
+      - name: Verify binary
+        run: |
+          ls -la _output/bin/linctl
+          ./_output/bin/linctl version
+
+      - name: Build linctl-otel (with OpenTelemetry)
+        run: go build -trimpath -tags otel -o _output/bin/linctl-otel ./cmd/linctl
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: linctl-binaries
+          path: _output/bin/

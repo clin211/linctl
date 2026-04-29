@@ -1,0 +1,31 @@
+// Healthz API definition, which includes health check response messages and status.
+syntax = "proto3"; // Specifies the syntax version used by this file.
+
+package {{ .Component.Name | snake }}.v1;
+
+option go_package = "{{ .Project.Metadata.Module }}/pkg/api/{{ .Component.Name }}/v1;v1";
+
+// ServiceStatus represents the health status of the service.
+enum ServiceStatus {
+    // Healthy indicates that the service is healthy.
+    Healthy = 0;
+
+    // Unhealthy indicates that the service is unhealthy.
+    Unhealthy = 1;
+}
+
+// HealthzResponse represents the response structure for a health check.
+message HealthzResponse {
+    // status represents the health status of the service.
+    ServiceStatus status = 1;
+
+    // timestamp represents the timestamp of the request.
+    string timestamp = 2;
+
+    // message represents an optional status message, providing additional
+    // information about the service's health.
+    string message = 3;
+
+    // version represents the version of the service.
+    string version = 4;
+}

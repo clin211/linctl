@@ -73,7 +73,6 @@ linctl/
 │   └── README.md
 ├── tests/                         # 测试代码（与生产代码分离）
 │   ├── e2e/                       # 端到端：跑完整 new + add api + go build
-│   ├── snapshot/                  # 模板 snapshot 测试
 │   ├── integration/               # 集成：MemMapFs 测多个命令组合
 │   └── fixtures/                  # 测试 fixture（项目配置等）
 ├── scripts/                       # 工具脚本
@@ -360,9 +359,8 @@ internal/project/
 
 ```
 internal/template/
-├── engine.go       # NewEngine / Render
+├── engine.go       # New / Render / Format（每模板独立 Parse + sync.Map 缓存）
 ├── funcmap.go      # 全部模板函数
-├── partial.go      # include/partial 支持
 ├── data.go         # TemplateData 结构
 ├── embed.go        # //go:embed templates/** 入口
 └── *_test.go
@@ -656,6 +654,42 @@ templates/
 - 静态资产（如 `golangci.yaml`）不加 `.tpl`，直接拷贝
 - 同一个目标资源（如 `gin/handler/api/resource.go.tpl`）由不同 Feature 通过 Apply 决定是否引入
 
+### 2.3.1 web-gin 风格项目级骨架（v0.2.3 起 framework=gin 默认开启）
+
+为对齐 `osbuilder-demo/miniblog-v4` 的企业级架构，`framework=gin` 的 WebServer 组件会通过 `WebServer.BasePairs()` → `webGinPkgPairs()` 自动追加项目级（不带组件名）骨架文件：
+
+```
+templates/web-gin/
+├── internal/
+│   └── pkg/
+│       ├── contextx/
+│       │   ├── contextx.go.tpl       # WithUserID/UserID/...（context-scoped 身份）
+│       │   └── doc.go.tpl
+│       ├── known/
+│       │   ├── known.go.tpl          # XRequestID/XUserID/MaxErrGroupConcurrency
+│       │   ├── role.go.tpl           # RoleUser/RoleAdmin
+│       │   └── doc.go.tpl
+│       └── errno/
+│           ├── code.go.tpl           # 业务错误码 + 预定义错误（数据库/缓存/Token/...）
+│           ├── user.go.tpl           # 用户域错误（ErrUsernameInvalid/...）
+│           └── doc.go.tpl
+└── pkg/
+    └── errorsx/
+        ├── errorsx.go.tpl            # BizCode/BizError/APIResponse + HTTP↔gRPC 错误码映射
+        ├── code.go.tpl               # 预定义错误（OK/ErrInternal/...）+ ErrorXCompat
+        └── doc.go.tpl
+```
+
+**生成路径**（不带组件名，项目级共享）：
+- `internal/pkg/{contextx,known,errno}/*.go`
+- `pkg/errorsx/*.go`
+
+**多 WebServer 组件并存时**：每个 webserver 都贡献相同的 11 个 Pair，PairBuilder 按 `Dst` 自动去重，最终只生成一份。
+
+**依赖**：`pkg/errorsx/errorsx.go` 引用 `google.golang.org/grpc` + `google.golang.org/genproto/googleapis/rpc`，已由 `templates/project/go.mod.tpl` 在 `framework=gin` 分支自动加入 `require` 块。
+
+**仅 framework=gin**：`framework=grpc` 暂未开启 web-gin 骨架（grpc 项目通常已有自己的错误模型，待后续按需）。
+
 ## 2.4 测试目录组织
 
 ```
@@ -664,15 +698,6 @@ tests/
 │   ├── new_project_test.go         # 创建项目 → go build → 真正跑起来
 │   ├── add_api_test.go
 │   └── upgrade_test.go             # 升级 linctl 后旧项目能否 reconcile
-├── snapshot/                       # 模板快照
-│   ├── webserver_gin_test.go
-│   ├── webserver_grpc_test.go
-│   ├── worker_test.go
-│   └── golden/                     # golden files
-│       ├── webserver_gin/
-│       │   ├── cmd_main.go.golden
-│       │   └── internal_server.go.golden
-│       └── ...
 ├── integration/                    # 集成：MemFS 测多命令组合
 │   ├── plan_apply_test.go
 │   ├── conflict_resolution_test.go
@@ -726,7 +751,7 @@ _output/                            # gitignored
 | 命令组织 | `internal/osbuilder/cmd/cmd.go` 顶层 + `cmd/create/*.go` 子目录 | 全部在 `internal/cli/` 下，按功能命名 | 扁平化，减少嵌套 |
 | 类型定义 | `internal/osbuilder/types/` 与 `cmd/create/` 强耦合 | `internal/project/` 独立，纯数据类型 | 分离模型与命令 |
 | 文件操作 | `internal/osbuilder/file/` + `helper/` 重复 | 单一 `internal/fs/` | DRY |
-| 测试 | `test/test_all.sh` | `tests/{e2e,integration,snapshot}/` 分层 | Go 表驱动 |
+| 测试 | `test/test_all.sh` | `tests/{e2e,integration}/` + `internal/<pkg>/*_test.go` 分层 | Go 表驱动 |
 | 工具命令 | `cmd/{semver, addlicense, sysload}/` 散落 | **不内置**，外部独立工具 | 职责聚焦 |
 | 模板组织 | 平铺式 `tpl/project/internal/apiserver/...` | 分层 `templates/{common,framework,storage,deploy,feature}/` | 可组合 |
 

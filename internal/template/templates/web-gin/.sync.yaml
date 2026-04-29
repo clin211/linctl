@@ -1,0 +1,155 @@
+# ----------------------------------------------------------------------------
+# .sync.yaml — 上游同步规则声明
+#
+# 本文件由 `internal/templatesync/` 包消费（详见 docs/META-template-upstream-sync-2026-04-28.md）。
+# 维护者运行 `linctl internal templatesync status / plan / apply` 时，本文件作为
+# "miniblog-v4 → lin/templates/web-gin/" 同步的事实基准。
+#
+# ⚠️  U1 阶段范围说明：
+# 当前 files 块仅覆盖少量代表性映射（约 8 个），用于验证 5 个核心 transform
+# 工作正常。其余 ~120 个 .tpl 文件目前不在 sync.yaml 内，会被 status / plan 命令
+# 标记为 "missing-rule"，需要在 U2 阶段通过 `linctl internal templatesync add`
+# 命令逐步补齐（或人工编辑本文件追加）。这是 U1 的合理边界，避免一次性堆砌不
+# 可信的映射规则。
+# ----------------------------------------------------------------------------
+
+apiVersion: linctl-internal/v1
+kind: TemplateUpstreamSync
+
+metadata:
+  name: web-gin-upstream
+  description: "Sync miniblog-v4 → lin/templates/web-gin/"
+
+upstream:
+  name: miniblog-v4
+  rootPath: ../../../../../miniblog-v4    # 相对本文件：lin/internal/template/templates/web-gin/.sync.yaml
+  moduleOld: github.com/clin211/miniblog-v4
+  binaryNameOld: blog-apiserver
+  componentNameOld: apiserver
+  # 限定 unknown-new 扫描范围。空 / 不写时会扫整个 rootPath，导致 .claude/ data/
+  # build 产物等噪音 → 显式列出代码 / 配置相关子目录。
+  scanPaths:
+    - cmd
+    - internal
+    - pkg
+    - api
+    - configs
+    - scripts
+    - examples
+    - third_party
+    - build
+    - docs
+
+# 全局默认 transforms：对所有 owner=upstream / shared 的文件依次应用。
+# 顺序敏感：rewriteImports → replaceLiteral → stripCopyrightHeader → insertLinctlHeader。
+# `addExtension` 仅在 dst 路径推断时使用（content 阶段 no-op），列在末尾不影响行为。
+defaultTransforms:
+  - kind: rewriteImports
+    from: '{{ .Upstream.ModuleOld }}'
+    to: 'EXAMPLE_MODULE_PLACEHOLDER'      # U1 用占位；U2 接入 lin 模板 engine 后改为 `{{`{{ .Project.Module }}`}}` 让 lin 渲染时填真实 module
+
+  - kind: replaceLiteral
+    pairs:
+      # 长串先于短串（避免 "apiserver" 提前替换 "blog-apiserver"）
+      - from: blog-apiserver
+        to: 'EXAMPLE_BINARY_PLACEHOLDER'
+      - from: apiserver
+        to: 'EXAMPLE_COMPONENT_PLACEHOLDER'
+
+  - kind: stripCopyrightHeader
+
+  - kind: addExtension
+    suffix: .tpl
+    appliesTo: ['*.go', '*.proto', '*.yaml', '*.yml']
+
+  - kind: insertLinctlHeader
+    # 用默认 template；运行时 RuntimeContext 会注入 UpstreamCommit / SyncManifestPath。
+
+# ============================================================================
+# 文件级映射（U1 阶段：8 个代表性样本）
+#
+# 选取原则：
+#   1. 覆盖 owner=upstream / shared 两种归属
+#   2. 覆盖 internal/pkg/ 与 pkg/ 两种顶层位置
+#   3. 覆盖纯 Go / 含中英文翻译差异的不同情况
+#   4. 至少包含 1 个 doc.go 用于验证 stripCopyrightHeader 在小文件上的行为
+# ============================================================================
+files:
+  # --- internal/pkg/contextx ---
+  # contextx.go：lin/web-gin 已经把英文注释翻译为中文 → owner=shared，未来需 3-way merge
+  - src: internal/pkg/contextx/contextx.go
+    dst: internal/pkg/contextx/contextx.go.tpl
+    owner: shared
+
+  - src: internal/pkg/contextx/doc.go
+    dst: internal/pkg/contextx/doc.go.tpl
+    owner: shared
+
+  # --- internal/pkg/known ---
+  - src: internal/pkg/known/known.go
+    dst: internal/pkg/known/known.go.tpl
+    owner: upstream
+
+  - src: internal/pkg/known/role.go
+    dst: internal/pkg/known/role.go.tpl
+    owner: upstream
+
+  - src: internal/pkg/known/doc.go
+    dst: internal/pkg/known/doc.go.tpl
+    owner: upstream
+
+  # --- internal/pkg/rid ---
+  - src: internal/pkg/rid/rid.go
+    dst: internal/pkg/rid/rid.go.tpl
+    owner: upstream
+
+  - src: internal/pkg/rid/salt.go
+    dst: internal/pkg/rid/salt.go.tpl
+    owner: upstream
+
+  # --- pkg/authn/authn.go：上游核心鉴权契约，必须随上游保持 ---
+  - src: pkg/authn/authn.go
+    dst: pkg/authn/authn.go.tpl
+    owner: upstream
+
+# ============================================================================
+# lin-specific 文件（仅 lin 仓库内存在，不来自 miniblog-v4）
+# 注意：当前列表仅占位，实际场景下若 lin/web-gin 中确有此类文件，应在此列出。
+# 例如 pkg/util/lint/* 下若有 lin 自定义 analyzer，应标注。
+# ============================================================================
+linSpecific: []
+
+# ============================================================================
+# 显式忽略：上游有但故意不模板化（避免 status 命令把它们列为 unknown）
+# ============================================================================
+ignored:
+  - src: internal/apiserver/wire_gen.go
+    reason: "wire_gen.go 由 wire 命令自动生成；用户跑 linctl new 后再 make wire"
+
+  - src: pkg/api/apiserver/v1/apiserver.pb.go
+    reason: "由 protoc 生成；用户跑 make protoc 后产出"
+
+  - src: pkg/api/apiserver/v1/apiserver.pb.gw.go
+    reason: "由 protoc-gen-grpc-gateway 生成"
+
+  - src: pkg/api/apiserver/v1/apiserver_grpc.pb.go
+    reason: "由 protoc-gen-go-grpc 生成"
+
+  - src: pkg/api/apiserver/v1/healthz.pb.go
+    reason: "protoc 生成"
+
+  - src: pkg/api/apiserver/v1/healthz.pb.defaults.go
+    reason: "protoc-gen-defaults 生成"
+
+  - src: pkg/api/apiserver/v1/user.pb.go
+    reason: "protoc 生成"
+
+  - src: pkg/api/apiserver/v1/user.pb.defaults.go
+    reason: "protoc-gen-defaults 生成"
+
+# ============================================================================
+# 新文件检测策略
+# ============================================================================
+newFilePolicy:
+  default: warn                # warn / error / autoAdd
+  autoAddOwner: upstream       # autoAdd 时新文件的默认 owner

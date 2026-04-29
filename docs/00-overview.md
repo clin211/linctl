@@ -32,7 +32,7 @@
 | 5 | 内置规范化的 Makefile / Dockerfile / golangci-lint / GitHub Actions 模板 | [05-template-system.md](./05-template-system.md) |
 | 6 | Feature 系统：每个特性独立模板 + AST mutator + funcMap | [08-feature-system.md](./08-feature-system.md) |
 | 7 | 文件级 `// linctl: hash=<sha256>` 注释 + 3-way merge | [06-codegen-pipeline.md](./06-codegen-pipeline.md) |
-| 8 | 拒绝 k8s 全家桶，只保留 cobra/viper/afero 等核心 ~15 个依赖 | [10-tech-stack.md](./10-tech-stack.md) |
+| 8 | 拒绝 k8s 全家桶，只保留 cobra/validator/afero/dst 等核心依赖（**Phase 1 实测仅 9 个直接依赖**） | [10-tech-stack.md](./10-tech-stack.md) |
 
 ## 0.3 目标用户
 
@@ -93,7 +93,6 @@
 | Drift 检测 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ (hash) |
 | 3-way merge | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Feature 插件 | ❌ (硬编码) | CRD ext | ❌ | ❌ | hooks | ✅ (注册式) |
-| 模板 snapshot 测试 | ❌ | 部分 | ❌ | ❌ | ❌ | ✅ |
 | 二进制 size | ~20MB | ~35MB | ~25MB | ~30MB | N/A (Python) | 目标 ~10MB |
 | 学习曲线 | 中 | 高 | 低 | 中 | 低 | 低 |
 

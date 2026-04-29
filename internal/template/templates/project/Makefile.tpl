@@ -1,0 +1,278 @@
+# ==============================================================================
+# Define global Makefile variables for easy reference later
+
+COMMON_SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+# Project root directory
+PROJ_ROOT_DIR := $(strip $(abspath $(shell cd $(COMMON_SELF_DIR)/ && pwd -P)))
+# Directory for build artifacts and temporary files
+OUTPUT_DIR := $(PROJ_ROOT_DIR)/_output
+# Path to Protobuf files
+APIROOT=$(PROJ_ROOT_DIR)/pkg/api
+ROOT_PACKAGE={{ .Project.Metadata.Module }}
+DOCKERFILE_DIR=$(PROJ_ROOT_DIR)/build/docker
+REGISTRY_PREFIX ?= {{ .Project.Metadata.Name }}
+
+# Set the unit test coverage threshold. The value of 1 here is just for demonstration, as the project currently lacks comprehensive unit tests.
+# For production environments, it is recommended to set a higher threshold, e.g., 60.
+COVERAGE := 1
+
+# ==============================================================================
+# Define version-related variables
+
+## Specify the version package used by the application. Values will be injected into variables in this package using `-ldflags -X`.
+VERSION_PACKAGE={{ .Project.Metadata.Module }}/pkg/version
+
+## Check if current directory is a Git repository
+IS_GIT_REPO := $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
+ifeq ($(IS_GIT_REPO),)
+    # Non-Git repository, use fallback values
+    GIT_TREE_STATE := "not_a_git_repo"
+    VERSION := v0.0.0
+    GIT_COMMIT := "unknown"
+else
+    # Define the VERSION semantic version (if not already set)
+    ifeq ($(origin VERSION), undefined)
+        VERSION := $(shell git describe --tags --abbrev=0 --match='v*' 2>/dev/null || echo v0.0.0)
+    endif
+
+    # Check if the code repository is in a dirty state (default is dirty)
+    GIT_TREE_STATE := "dirty"
+    ifeq (, $(shell git status --porcelain 2>/dev/null))
+        GIT_TREE_STATE := "clean"
+    endif
+
+    # Get current Git commit hash
+    GIT_COMMIT := $(shell git rev-parse HEAD)
+endif
+
+GO_LDFLAGS += \
+    -X $(VERSION_PACKAGE).gitVersion=$(VERSION) \
+    -X $(VERSION_PACKAGE).gitCommit=$(GIT_COMMIT) \
+    -X $(VERSION_PACKAGE).gitTreeState=$(GIT_TREE_STATE) \
+    -X $(VERSION_PACKAGE).buildDate=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ') \
+    -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn
+
+ifeq ($(GOOS),windows)
+    GO_OUT_EXT := .exe
+endif
+
+GO_BUILD_FLAGS += -ldflags "$(GO_LDFLAGS)"
+
+# 默认编译 cmd/* 下的全部二进制（排除 *.md 等非命令）。
+COMMANDS ?= $(filter-out %.md, $(wildcard $(PROJ_ROOT_DIR)/cmd/*))
+BINS ?= $(foreach cmd,${COMMANDS},$(notdir $(cmd)))
+IMAGES ?= $(filter-out tools, $(foreach dir, $(COMMANDS), $(notdir $(if $(wildcard $(dir)/*.go), $(dir),))))
+
+# 编译的操作系统可以是 linux/windows/darwin
+PLATFORMS ?= darwin_amd64 darwin_arm64 windows_amd64 windows_arm64 linux_amd64 linux_arm64
+
+# 设置一个指定的操作系统
+ifeq ($(origin PLATFORM), undefined)
+    ifeq ($(origin GOOS), undefined)
+        GOOS := $(shell go env GOOS)
+    endif
+    ifeq ($(origin GOARCH), undefined)
+        GOARCH := $(shell go env GOARCH)
+    endif
+    PLATFORM := $(GOOS)_$(GOARCH)
+    # 构建镜像时，使用 linux 作为默认的 OS
+    IMAGE_PLAT := linux_$(GOARCH)
+else
+    GOOS := $(word 1, $(subst _, ,$(PLATFORM)))
+    GOARCH := $(word 2, $(subst _, ,$(PLATFORM)))
+    IMAGE_PLAT := $(PLATFORM)
+endif
+
+# ==============================================================================
+# Define the default target as `all`
+.DEFAULT_GOAL := all
+
+# Define the Makefile `all` phony target. When `make` is executed, it will default to executing the `all` target.
+.PHONY: all
+all: deps protoc tidy format generate build cover
+
+# ==============================================================================
+# Usage
+
+define USAGE_OPTIONS
+
+Options:
+  BINS             The binary files to build. Defaults to all subdirs under cmd/.
+                   This option can be used with the following command: make build
+                   Example: make build BINS=<BinaryName>
+  IMAGES           Backend images to make. Defaults to all files in the `cmd` directory.
+                   This option is available when using command: make image
+                   Example: make image IMAGES=<BinaryName>
+  VERSION          Version information to embed into the binary.
+  V                Set to 1 to enable verbose build output. Default is 0.
+endef
+export USAGE_OPTIONS
+
+# ==============================================================================
+# Define other required phony targets
+#
+
+.PHONY: build.multiarch
+build.multiarch: $(foreach p,$(PLATFORMS),$(addprefix build., $(addprefix $(p)., $(BINS)))) ## Build all applications with all supported arch.
+
+.PHONY: build
+build: $(addprefix build., $(addprefix $(PLATFORM)., $(BINS))) ## Build all binaries for the selected platform.
+
+build.%: ## 编译 Go 源码.
+	$(eval COMMAND := $(word 2,$(subst ., ,$*)))
+	$(eval PLATFORM := $(word 1,$(subst ., ,$*)))
+	$(eval OS := $(word 1,$(subst _, ,$(PLATFORM))))
+	$(eval ARCH := $(word 2,$(subst _, ,$(PLATFORM))))
+	@echo "===========> Building binary $(COMMAND) $(VERSION) for $(OS) $(ARCH)"
+	@mkdir -p $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)
+	@CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) go build $(GO_BUILD_FLAGS) \
+		-o $(OUTPUT_DIR)/platforms/$(OS)/$(ARCH)/$(COMMAND)$(GO_OUT_EXT) \
+		$(ROOT_PACKAGE)/cmd/$(COMMAND)
+
+.PHONY: image
+image: $(addprefix image., $(addprefix $(PLATFORM)., $(IMAGES))) ## Build all docker images for the selected platform.
+
+image.%: build.% ## 构建指定的 Docker 镜像
+	$(eval IMAGE := $(word 2,$(subst ., ,$*)))
+	$(eval IMAGE_TAG := $(subst +,-,$(VERSION)))
+	@echo "===========> Building docker image $(IMAGE) $(IMAGE_TAG) for $(IMAGE_PLAT)"
+	$(eval PLATFORM := $(word 1,$(subst ., ,$*)))
+	$(eval ARCH := $(word 2,$(subst _, ,$(PLATFORM))))
+	$(eval OS := $(word 1,$(subst _, ,$(PLATFORM))))
+	$(eval DOCKERFILE := Dockerfile)
+	@DOCKER_BUILDKIT=1 docker build \
+		--build-arg OS=$(OS) \
+		--build-arg ARCH=$(ARCH) \
+		--file $(DOCKERFILE_DIR)/$(IMAGE)/$(DOCKERFILE) \
+		--tag $(REGISTRY_PREFIX)/$(IMAGE):$(IMAGE_TAG) \
+		$(PROJ_ROOT_DIR)
+
+.PHONY: format
+format: ## Format source code with gofmt (-s -w).
+	@gofmt -s -w ./
+
+.PHONY: add-copyright
+add-copyright: ## Add copyright headers (skip third_party, vendor, _output).
+	@addlicense -v -f $(PROJ_ROOT_DIR)/scripts/boilerplate.txt $(PROJ_ROOT_DIR) --skip-dirs=third_party,vendor,$(OUTPUT_DIR)
+
+.PHONY: tidy
+tidy: ## Sync dependencies and update go.mod/go.sum (go mod tidy).
+	@go mod tidy
+
+.PHONY: clean
+clean: ## Remove build artifacts and temp files (_output/).
+	@-rm -vrf $(OUTPUT_DIR)
+
+.PHONY: protoc
+protoc: ## Compile Protobuf files.
+	@echo "===========> Generate protobuf files"
+	@mkdir -p $(PROJ_ROOT_DIR)/api/openapi
+	@PROTOS=$$(find $(APIROOT) -type f -name "*.proto" 2>/dev/null); \
+	if [ -z "$$PROTOS" ]; then \
+		echo "    no .proto files under $(APIROOT), skipping"; \
+		exit 0; \
+	fi; \
+	protoc                                               \
+		--proto_path=$(APIROOT)                          \
+		--proto_path=$(PROJ_ROOT_DIR)/third_party/protobuf    \
+		--go_out=paths=source_relative:$(APIROOT)        \
+		--go-grpc_out=paths=source_relative:$(APIROOT)   \
+		--grpc-gateway_out=allow_delete_body=true,paths=source_relative:$(APIROOT) \
+		--openapiv2_out=$(PROJ_ROOT_DIR)/api/openapi \
+		--openapiv2_opt=allow_delete_body=true,logtostderr=true \
+		--defaults_out=paths=source_relative:$(APIROOT) \
+		$$PROTOS
+	@if [ -d "$(APIROOT)" ]; then \
+		find $(APIROOT) -name "*.pb.go" -exec protoc-go-inject-tag -input={} \; ; \
+	fi
+
+.PHONY: protoc.%
+protoc.%: ## Compile Protobuf files for a specific module under pkg/api/<module>.
+	@echo "===========> Generate protobuf files for $*"
+	@mkdir -p $(PROJ_ROOT_DIR)/api/openapi
+	@PROTOS=$$(find $(APIROOT)/$* -type f -name "*.proto" 2>/dev/null); \
+	if [ -z "$$PROTOS" ]; then \
+		echo "    no .proto files under $(APIROOT)/$*, skipping"; \
+		exit 0; \
+	fi; \
+	protoc                                               \
+		--proto_path=$(APIROOT)                          \
+		--proto_path=$(PROJ_ROOT_DIR)/third_party/protobuf    \
+		--go_out=paths=source_relative:$(APIROOT)        \
+		--go-grpc_out=paths=source_relative:$(APIROOT)   \
+		--grpc-gateway_out=allow_delete_body=true,paths=source_relative:$(APIROOT) \
+		--openapiv2_out=$(PROJ_ROOT_DIR)/api/openapi \
+		--openapiv2_opt=allow_delete_body=true,logtostderr=true \
+		--defaults_out=paths=source_relative:$(APIROOT) \
+		$$PROTOS
+	@if [ -d "$(APIROOT)/$*" ]; then \
+		find $(APIROOT)/$* -name "*.pb.go" -exec protoc-go-inject-tag -input={} \; ; \
+	fi
+
+.PHONY: test
+test: ## Run unit tests (-race -cover -shuffle -short).
+	@echo "===========> Running unit tests"
+	@mkdir -p $(OUTPUT_DIR)
+	@go test -race -cover \
+		-coverprofile=$(OUTPUT_DIR)/coverage.out \
+		-timeout=10m -shuffle=on -short \
+		-v `go list ./...|egrep -v 'tools|vendor|third_party'`
+
+.PHONY: cover
+cover: test ## Run tests and enforce coverage threshold (COVERAGE%).
+	@echo "===========> Running code coverage tests"
+	@go tool cover -func=$(OUTPUT_DIR)/coverage.out | awk -v target=$(COVERAGE) -f $(PROJ_ROOT_DIR)/scripts/coverage.awk
+
+.PHONY: lint
+lint: ## Static analysis with golangci-lint (uses .golangci.yaml).
+	@echo "===========> Running golangci to lint source codes"
+	@golangci-lint run -c $(PROJ_ROOT_DIR)/.golangci.yaml $(PROJ_ROOT_DIR)/...
+
+.PHONY: deps
+deps: ## Install build and codegen tools.
+	@echo "===========> Installing dependent tools, may take a while ..."
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
+	@go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
+	@go install github.com/onexstack/protoc-gen-defaults@latest
+	@go install github.com/favadi/protoc-go-inject-tag@latest
+	@go install github.com/google/wire/cmd/wire@latest
+	@go install github.com/onexstack/addlicense@v0.0.3
+	@if ! command -v golangci-lint >/dev/null 2>&1; then \
+		echo "golangci-lint not found, installing..."; \
+		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | \
+			sh -s -- -b "$$(go env GOPATH)/bin" v2.4.0 ; \
+	fi
+
+.PHONY: generate
+generate: wire ## Run go:generate directives across the module (also runs `wire`).
+	@echo "===========> go generate ./..."
+	@go generate ./...
+
+# ==============================================================================
+# linctl-specific convenience targets (not in miniblog-v4 upstream).
+#
+# 这些目标是 linctl 在生成项目时附带的便捷入口，便于在本地直接 `make wire` 重新
+# 注入依赖、`make run` 一键启动主组件等。需要保持与 miniblog 风格的目标互不冲突。
+
+WIRE := $(shell go env GOPATH)/bin/wire
+
+.PHONY: wire
+wire: ## Run wire ./... to regenerate ProviderSet wiring.
+	@command -v $(WIRE) >/dev/null 2>&1 || GO111MODULE=on go install github.com/google/wire/cmd/wire@latest
+	@echo "===========> wire ./..."
+	@$(WIRE) ./...
+
+# `run` 默认启动第一个 component（gin / grpc 都通用）。
+APP ?= {{ (index .Project.Spec.Components 0).Name }}
+
+.PHONY: run
+run: ## Build and run the primary application ($(APP)).
+	@echo "===========> Building and running $(APP)"
+	@CGO_ENABLED=0 go build $(GO_BUILD_FLAGS) -o $(OUTPUT_DIR)/bin/$(APP) $(ROOT_PACKAGE)/cmd/$(APP)
+	@$(OUTPUT_DIR)/bin/$(APP) -c configs/$(APP).yaml
+
+help: Makefile  ## Show available targets and usage.
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<TARGETS> <OPTIONS>\033[0m\n\n\033[35mTargets:\033[0m\n"} /^[0-9A-Za-z._-]+:.*?##/ { printf "  \033[36m%-45s\033[0m %s\n", $$1, $$2 } /^\$$\([0-9A-Za-z_-]+\):.*?##/ { gsub("_","-", $$1); printf "  \033[36m%-45s\033[0m %s\n", tolower(substr($$1, 3, length($$1)-7)), $$2 } /^##@/{ printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' Makefile #$(MAKEFILE_LIST)
+	@echo "$$USAGE_OPTIONS"

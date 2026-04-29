@@ -121,13 +121,13 @@ flowchart TD
 | `99-glossary.md` | ✅ | 术语表（已完成，是后续文档基准） |
 | `META-roadmap.md` | ✅ | 本文档 |
 | `adr/README.md` + `adr/000-template.md` + `adr/001-005*.md` | ✅ 已交付 | ADR 机制 + 5 项关键决策（001-use-dst-not-goast / 002-use-embed-not-statik / 003-use-protocompile-for-proto / 004-plan-apply-pattern / 005-feature-as-first-class） |
-| `10-tech-stack.md` | 🚧 进行中 | 技术栈选型（09/11/12/13 的前提） |
-| `09-component-design.md` | 🚧 进行中 | 组件接口与三种内置实现 |
-| `11-implementation-plan.md` | 🚧 进行中 | 5 Phase × 详细任务拆分 |
-| `12-testing-strategy.md` | 🚧 进行中 | 单测/集成/snapshot/E2E + CI 矩阵 |
-| `13-coding-standards.md` | 🚧 进行中 | 命名/错误/日志/i18n 规范 |
-| `diagrams/*.mmd` × 10 | 🚧 进行中 | 抽离 README 列出的所有 Mermaid 图 |
-| `README.md` 更新 | 🚧 进行中 | 索引 + 双向引用 |
+| `10-tech-stack.md` | ✅ 已完成 | 技术栈选型（含 ≤18 直接依赖；Phase 1 实测 9 个） |
+| `09-component-design.md` | ✅ 已完成 | 组件接口与三种内置实现（Phase 1 已实现 WebServer） |
+| `11-implementation-plan.md` | ✅ 已完成 + Phase 1 进度回填 | 5 Phase × 详细任务拆分；Story 1.1-1.8 已标记完成 |
+| `12-testing-strategy.md` | ✅ 已完成 | 单测/集成/E2E + CI 矩阵（70/20/10） |
+| `13-coding-standards.md` | ✅ 已完成 | 命名/错误/日志/i18n 规范 + OTel build tag |
+| `diagrams/*.mmd` × 11 | ✅ 已完成 | 全部 Stage 标注 + seq-new-project-target.mmd 新增 |
+| `README.md` 更新 | ✅ 已完成 | 中文索引 + 双向引用 + Phase 1 实施进度 |
 
 ### Batch 2：架构盲点（生产级）—— 当前批次 ✅
 

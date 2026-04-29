@@ -1,12 +1,20 @@
 # 05. 模板系统设计
 
+> **注（2026-04-26 修订，0.2.2）**：彻底移除 `partials/` 共享片段机制（包含原 §5.9 partial / include 支持小节、`Engine.WithPartialsDir` Option、`partialsDir` 字段及相关 ParseFS/Clone 逻辑）。
+>
+> 原因：
+> 1. 内置模板已不再注入"DO NOT EDIT"等文件头注释（与 linctl "hash drift + Strategy=ask 让用户安全编辑生成文件" 的设计哲学冲突），唯一示例 `partials/header.tpl` 在 0.2.1 已删除。
+> 2. 业务模板里的复用诉求由用户根据自己的业务自行编排，linctl 不再为 partials 提供专门的命名空间共享，避免引入"既要又要"的接缝。
+>
+> 渲染策略简化为：**每个业务模板独立 Parse + sync.Map 缓存 + missingkey=error 严格模式**。
+
 ## 5.1 设计目标
 
 | 目标 | 解释 |
 | --- | --- |
 | **零外部工具** | 替换 osbuilder 的 `rakyll/statik`（已归档），全部用 `//go:embed` |
 | **可组合** | 按 `framework / storage / feature / deploy` 维度独立分层 |
-| **可测试** | 每个模板都可 snapshot 测试 |
+| **可测试** | 每个模板都通过 component / 单元测试 + E2E 真实 `go build` 双重保障 |
 | **可扩展** | 通过 `Feature.Apply()` 动态贡献模板对，无需改主路径 |
 | **可调试** | 渲染失败时打印模板名 + 行号 + 数据上下文 |
 | **保留注释** | 模板里的注释（如 `{{/* explanation */}}`）不污染输出 |
@@ -19,7 +27,6 @@ flowchart TD
     Embed[(templates/<br/>//go:embed)]
     Engine[Template Engine]
     FuncMap[Custom FuncMap<br/>kind/lowerkind/...]
-    Partials[partials/<br/>常用片段]
 
     UserCfg[linctl.yaml<br/>Project struct]
     Component[Component<br/>WebServer/Worker/CLI]
@@ -37,7 +44,6 @@ flowchart TD
 
     Embed --> Engine
     FuncMap --> Engine
-    Partials --> Engine
 
     UserCfg --> Component
     Component --> PairBuilder
@@ -120,16 +126,13 @@ templates/component/webserver/cmd/{{.Component.Name}}/main.go.tpl
 
 ## 5.5 模板引擎封装
 
-> **关键设计：单一根 Template 命名空间**
+> **关键设计：每个业务模板独立 Parse + sync.Map 缓存**
 >
-> `text/template` 的 `{{template "name" .}}` 调用只能查找**同一棵 template tree** 内的子模板。
-> 因此 linctl 强制使用「**单一根 Template + ParseFS 预加载 partials + 渲染时 Clone/New 业务模板**」的模式：
+> linctl 不再提供 partials 共享命名空间机制，每个业务模板独立 `text/template.New().Parse()`，渲染流程更直观、无命名空间冲突风险：
 >
-> 1. **构造 Engine 时**：用 `texttemplate.New("__root__").Funcs(...).ParseFS(embedded, "templates/partials/*.tpl")` 一次性把所有 partial 解析进同一棵 root 树（每个 partial 文件名作为 template 名）。
-> 2. **渲染业务模板时**：`root.Clone()` 出一棵带 partials 的克隆树 → 在克隆上用 `.New(tplPath).Parse(<业务模板内容>)` 注入业务模板 → 业务模板里的 `{{template "partials/header.tpl" .}}` 即可命中 partial。
-> 3. **必须 Clone 而不能直接复用**：`.New(...).Parse(...)` 会把业务模板挂到根上，多个业务模板若共享同一根会相互污染（同名 redefine、并发竞态）。Clone 保证每次渲染拿到独立的命名空间。
->
-> 这一设计闭合了「主 Render」与「partial 命名空间」的接缝（SSOT 修复点 P0-3）。
+> 1. **首次渲染**：从 fs 读取模板内容 → `texttemplate.New(base).Funcs(funcMap).Option("missingkey=error").Parse(content)` → 缓存到 `sync.Map`。
+> 2. **后续渲染**：直接命中缓存返回独立的 `*Template`。
+> 3. **复用诉求**：业务复用由用户自行决定（如直接拼接生成字符串、或在 FuncMap 中提供 helper），linctl 不再托管。
 
 ```go
 // internal/template/engine.go
@@ -138,117 +141,103 @@ package template
 import (
     "bytes"
     "fmt"
+    "go/format"
     "io/fs"
+    "path/filepath"
     "strings"
     "sync"
     texttemplate "text/template"
 
-    "mvdan.cc/gofumpt/format"
+    "github.com/clin211/linctl/internal/linctlerr"
 )
 
 type Engine struct {
-    embedded   fs.FS
-    funcMap    texttemplate.FuncMap
-    extraFuncs []texttemplate.FuncMap // Feature 贡献的 funcMap
-
-    // root 是一棵预解析了所有 partials 的根 Template；渲染业务模板时 Clone 出独立副本使用。
-    root        *texttemplate.Template
-    initOnce    sync.Once
-    initErr     error
-    parsedCache sync.Map // tplPath → *texttemplate.Template (Clone+业务模板，详见 §5.14.1)
+    fs          fs.FS
+    funcMap     texttemplate.FuncMap
+    parsedCache sync.Map // map[string]*texttemplate.Template
 }
 
-func New(embedded fs.FS) *Engine {
-    return &Engine{
-        embedded: embedded,
-        funcMap:  defaultFuncMap(),
-    }
+type Option func(*Engine)
+
+// WithFS 注入自定义 fs.FS（如内存测试 FS）。默认为 TemplatesFS。
+func WithFS(f fs.FS) Option {
+    return func(e *Engine) { e.fs = f }
 }
 
-// AddFuncs 在 init() 之前调用；init 之后再 AddFuncs 不会被 partials 看见。
-func (e *Engine) AddFuncs(fm texttemplate.FuncMap) {
-    e.extraFuncs = append(e.extraFuncs, fm)
-}
-
-// init 懒初始化根模板，预加载所有 partials。线程安全（sync.Once）。
-func (e *Engine) init() error {
-    e.initOnce.Do(func() {
-        funcs := e.mergeFuncs()
-        root := texttemplate.New("__root__").
-            Option("missingkey=error").
-            Funcs(funcs)
-
-        // 预加载所有 partial 到同一棵 root 树；
-        // partial 名 = embedded 路径（如 "templates/partials/header.tpl"）。
-        parsed, err := root.ParseFS(e.embedded, "templates/partials/*.tpl")
-        if err != nil {
-            // 允许 partials/ 目录不存在（无 partial 项目仍可工作）
-            if !isFSPathErrNotExist(err) {
-                e.initErr = fmt.Errorf("preload partials: %w", err)
-                return
-            }
-            parsed = root
+// WithFuncMap 追加 / 覆盖模板函数（合并到 DefaultFuncMap 之上）。
+func WithFuncMap(extra texttemplate.FuncMap) Option {
+    return func(e *Engine) {
+        if e.funcMap == nil {
+            e.funcMap = make(texttemplate.FuncMap, len(extra))
         }
-        e.root = parsed
-    })
-    return e.initErr
+        for k, v := range extra {
+            e.funcMap[k] = v
+        }
+    }
 }
 
-// Render 渲染单个业务模板（自动确保 partials 已加载）。
-func (e *Engine) Render(tplPath string, data any) ([]byte, error) {
-    if err := e.init(); err != nil {
-        return nil, err
+// New 构造一个 Engine。返回 error 仅为接口稳定性预留（当前实现不会失败）。
+func New(opts ...Option) (*Engine, error) {
+    e := &Engine{
+        fs:      TemplatesFS,
+        funcMap: DefaultFuncMap(),
     }
+    for _, opt := range opts {
+        opt(e)
+    }
+    return e, nil
+}
 
+// Render 渲染单个业务模板。
+func (e *Engine) Render(tplPath string, data any) ([]byte, error) {
     tmpl, err := e.lookupOrParse(tplPath)
     if err != nil {
         return nil, err
     }
-
     var buf bytes.Buffer
     if err := tmpl.Execute(&buf, data); err != nil {
-        return nil, fmt.Errorf("execute template %s: %w\n--- DATA ---\n%+v", tplPath, err, data)
+        return nil, &RenderError{Template: tplPath, Err: err, Data: data}
     }
     return buf.Bytes(), nil
 }
 
-// lookupOrParse 通过缓存得到「Clone 自 root + 业务模板已 Parse」的可用 *Template。
-// Clone 的目的：每个业务模板得到独立的命名空间副本，避免并发渲染时
-// .New(tplPath).Parse(...) 互相覆盖 root 上的同名子模板。
+// lookupOrParse 命中缓存返回；否则 Parse + 缓存。
 func (e *Engine) lookupOrParse(tplPath string) (*texttemplate.Template, error) {
     if cached, ok := e.parsedCache.Load(tplPath); ok {
         return cached.(*texttemplate.Template), nil
     }
-
-    content, err := fs.ReadFile(e.embedded, tplPath)
+    content, err := fs.ReadFile(e.fs, tplPath)
     if err != nil {
-        return nil, fmt.Errorf("read template %s: %w", tplPath, err)
+        return nil, linctlerr.Wrapf(linctlerr.ErrTemplateRender, err,
+            "read template %s", tplPath)
     }
-
-    cloned, err := e.root.Clone()
+    parsed, err := texttemplate.New(filepath.Base(tplPath)).
+        Funcs(e.funcMap).
+        Option("missingkey=error").
+        Parse(string(content))
     if err != nil {
-        return nil, fmt.Errorf("clone root: %w", err)
+        return nil, linctlerr.Wrapf(linctlerr.ErrTemplateRender, err,
+            "parse template %s", tplPath)
     }
-
-    tmpl, err := cloned.New(tplPath).Parse(string(content))
-    if err != nil {
-        return nil, fmt.Errorf("parse template %s: %w", tplPath, err)
-    }
-
-    // 关键：执行业务模板时必须 Lookup 出 tplPath 名的子模板（而非 root），
-    // 否则 Execute 会从 __root__ 开始执行（空内容）。
-    business := tmpl.Lookup(tplPath)
-    if business == nil {
-        return nil, fmt.Errorf("internal: lookup %q after parse returned nil", tplPath)
-    }
-
-    e.parsedCache.Store(tplPath, business)
-    return business, nil
+    e.parsedCache.Store(tplPath, parsed)
+    return parsed, nil
 }
 
-// RenderPath 同时渲染目标路径中的占位符（路径渲染不依赖 partials）。
+// Format 根据扩展名格式化
+func (e *Engine) Format(content []byte, ext string) ([]byte, error) {
+    if !strings.EqualFold(ext, ".go") {
+        return content, nil
+    }
+    formatted, err := format.Source(content)
+    if err != nil {
+        return content, linctlerr.Wrapf(linctlerr.ErrTemplateRender, err, "go format")
+    }
+    return formatted, nil
+}
+
+// RenderPath 渲染目标路径中的占位符。
 func (e *Engine) RenderPath(tplPath string, data any) (string, error) {
-    tmpl := texttemplate.New("path").Funcs(e.mergeFuncs())
+    tmpl := texttemplate.New("path").Funcs(e.funcMap)
     if _, err := tmpl.Parse(tplPath); err != nil {
         return "", err
     }
@@ -258,42 +247,9 @@ func (e *Engine) RenderPath(tplPath string, data any) (string, error) {
     }
     return buf.String(), nil
 }
-
-// isFSPathErrNotExist 判断 ParseFS 找不到任何匹配文件的错误。
-// （go1.22 起 ParseFS 在零匹配时返回 fs.ErrNotExist 包装的错误。）
-func isFSPathErrNotExist(err error) bool {
-    return err != nil && strings.Contains(err.Error(), "pattern matches no files")
-}
-
-// Format 根据扩展名格式化
-func (e *Engine) Format(filePath string, content []byte) ([]byte, error) {
-    switch {
-    case strings.HasSuffix(filePath, ".go"):
-        formatted, err := format.Source(content, format.Options{LangVersion: "1.22"})
-        if err != nil {
-            return nil, fmt.Errorf("gofumpt format %s: %w\n--- raw ---\n%s", filePath, err, content)
-        }
-        return formatted, nil
-    case strings.HasSuffix(filePath, ".proto"):
-        return formatProto(content) // 见 5.7
-    default:
-        return content, nil
-    }
-}
-
-func (e *Engine) mergeFuncs() texttemplate.FuncMap {
-    out := make(texttemplate.FuncMap, len(e.funcMap)+8)
-    for k, v := range e.funcMap {
-        out[k] = v
-    }
-    for _, fm := range e.extraFuncs {
-        for k, v := range fm {
-            out[k] = v
-        }
-    }
-    return out
-}
 ```
+
+> 注：MVP 阶段使用标准库 `go/format`；Phase 2+ 可切换到 `mvdan.cc/gofumpt/format`。`.proto` 格式化见 §5.7。
 
 ## 5.6 自定义 FuncMap
 
@@ -568,58 +524,18 @@ func (h *{{kind .Resource.Name}}Handler) Create(c *gin.Context) {
 }
 ```
 
-## 5.9 partial / include 支持
+## 5.9 模板复用策略（无 partial 机制）
 
-支持模板复用（解决 osbuilder 重复代码问题）。partial 加载与业务模板渲染共用**同一棵根 Template**，由 §5.5 中 `Engine.init()` 通过 `ParseFS` 完成预解析；本节只做约定与示例。
+linctl **不提供** partial / include 机制。模板复用诉求由用户根据业务自行决定，常见做法：
 
-### 5.9.1 命名空间约定
+1. **FuncMap 提供生成函数**：把可复用的代码片段封装为 FuncMap helper（见 §5.6），如 `{{copyrightHeader .Project}}`。
+2. **直接复制粘贴**：linctl 的内置模板更倾向于让每个文件自包含（self-contained）以便用户阅读和编辑后保留 hash drift 检测能力。
+3. **生成后再人工编辑**：linctl 的设计哲学是"生成 → 人工接管"，复用最好在生成后由用户在自己的代码中通过 Go 的常规手段（函数、struct 嵌入、interface 等）解决，而不是在模板层做命名空间共享。
 
-- partial 物理路径：`templates/partials/*.tpl`
-- partial 在模板树中的注册名 = embedded 路径全名（如 `templates/partials/header.tpl`），等同于 `Engine.init()` 调用 `ParseFS(embedded, "templates/partials/*.tpl")` 后 `text/template` 自动赋予的名字。
-- 业务模板必须用**同名**调用 `{{template "templates/partials/header.tpl" .}}`，**不要**写成 `{{template "header" .}}`（会找不到）。
-
-### 5.9.2 加载与命名空间闭合
-
-```go
-// 由 §5.5 的 Engine.init() 完成；此处仅作伪代码概念演示
-root := texttemplate.New("__root__").
-    Option("missingkey=error").
-    Funcs(funcMap)
-
-// 1) 一次性把所有 partials 加载到同一棵 root 树
-root, _ = root.ParseFS(embedded, "templates/partials/*.tpl")
-
-// 2) 渲染单个业务模板时：Clone root → New(tplPath).Parse(business) → Lookup(tplPath).Execute(data)
-//    Clone 保证多业务模板互不污染，Lookup 保证从业务模板入口而非 __root__ 开始执行
-cloned, _   := root.Clone()
-business, _ := cloned.New(tplPath).Parse(string(content))
-_ = business.Lookup(tplPath).Execute(out, data)
-```
-
-> **不要再单独写一个 `loadPartials() (*Template, error)` 然后忘记关联**——那会导致业务模板调用 `{{template "partials/..." .}}` 时报 `template not defined` 错误。SSOT P0-3 修复点：partial 与业务模板必须从**同一棵 root Clone** 出发。
-
-### 5.9.3 partial 示例
-
-`templates/partials/header.tpl`：
-
-```text
-{{- /* 文件头注释 */ -}}
-// Copyright {{currentYear}} {{.Project.Metadata.Author.Name}} <{{.Project.Metadata.Author.Email}}>.
-// All rights reserved.
-// Use of this source code is governed by a MIT style license.
-// Generated by linctl. DO NOT EDIT.
-//
-// Find more information at: https://linctl.dev/docs
-```
-
-业务模板里使用（注意名字必须是 embedded 全路径）：
-
-```text
-{{template "templates/partials/header.tpl" .}}
-package main
-
-// ...
-```
+> **历史背景**：0.2.x 早期曾通过 `templates/partials/*.tpl` 提供命名空间共享（单一根 Template + ParseFS + Clone/Lookup），唯一示例 `partials/header.tpl` 用于注入 "DO NOT EDIT" 头注释。此机制于 0.2.2 移除：
+> - `header.tpl` 与 linctl "hash drift + Strategy=ask 让用户安全编辑生成文件" 的设计哲学冲突；
+> - 内置模板已不再注入文件头注释，唯一示例失去存在价值；
+> - 移除后渲染流程从 "Clone(root) + New + Parse + Lookup" 简化为 "New + Parse"，引擎实现行数减半，命名空间冲突风险归零。
 
 ## 5.10 渲染失败的调试体验
 
@@ -668,68 +584,7 @@ if err := tmpl.Execute(&buf, data); err != nil {
   💡 Hint: Component has no field 'Foo'. Available fields: Kind, Name, Framework, ...
 ```
 
-## 5.11 模板单元测试
-
-每个模板都要有 snapshot 测试：
-
-```go
-// tests/snapshot/webserver_gin_test.go
-package snapshot_test
-
-import (
-    "os"
-    "path/filepath"
-    "testing"
-
-    "github.com/stretchr/testify/require"
-
-    "github.com/<org>/linctl/internal/project"
-    "github.com/<org>/linctl/internal/template"
-)
-
-func TestWebServerGin(t *testing.T) {
-    proj := loadFixture(t, "fixtures/projects/full.yaml")
-    component := proj.Spec.Components[0] // mb-apiserver
-
-    eng := template.New(template.TemplatesFS)
-
-    cases := []struct {
-        tpl string
-        want string // 相对 golden 路径
-    }{
-        {"templates/component/webserver/cmd/{{.Component.Name}}/main.go.tpl", "webserver_gin/main.go.golden"},
-        {"templates/framework/gin/server.go.tpl",                              "webserver_gin/server.go.golden"},
-        {"templates/framework/gin/handler/handler.go.tpl",                     "webserver_gin/handler.go.golden"},
-    }
-
-    for _, tc := range cases {
-        t.Run(tc.tpl, func(t *testing.T) {
-            data := template.NewTemplateData(proj, &component, "", nil)
-            content, err := eng.Render(tc.tpl, data)
-            require.NoError(t, err)
-            content, err = eng.Format(tc.tpl, content)
-            require.NoError(t, err)
-
-            goldenPath := filepath.Join("golden", tc.want)
-            if updateGolden() {
-                require.NoError(t, os.WriteFile(goldenPath, content, 0o644))
-                t.Skip("updated golden")
-            }
-            golden, err := os.ReadFile(goldenPath)
-            require.NoError(t, err)
-            require.Equal(t, string(golden), string(content))
-        })
-    }
-}
-```
-
-通过环境变量更新 golden 文件：
-
-```bash
-UPDATE_GOLDEN=1 go test ./tests/snapshot/...
-```
-
-## 5.12 模板的"绝对零硬编码"承诺
+## 5.11 模板的"绝对零硬编码"承诺
 
 - ❌ 禁止 `tmpl.ParseFiles("/Users/...")` 这种本机绝对路径（osbuilder 有此 bug）。
 - ❌ 禁止在模板里写死 `mb-apiserver`/`mb-jobserver`，必须用 `{{.Component.Name}}`。
@@ -756,7 +611,7 @@ if grep -rE '"mb-[a-z]+"' templates/ | grep -v '\.md\.tpl' | grep -v '#'; then
 fi
 ```
 
-## 5.13 模板版本号与 statik 兼容期
+## 5.12 模板版本号与 statik 兼容期
 
 为支持从 osbuilder 迁移到 linctl 的项目（双工具共存的过渡期），保留对模板路径前缀的兼容映射：
 
@@ -770,9 +625,9 @@ var templatePathAliases = map[string]string{
 
 > 这只是临时方案。正式版应彻底切换到新路径。
 
-## 5.14 性能优化
+## 5.13 性能优化
 
-### 5.14.1 模板预编译
+### 5.13.1 模板预编译
 
 预编译的实现已在 §5.5 `Engine.lookupOrParse` 中给出（`parsedCache sync.Map`）。要点回顾：
 
@@ -782,7 +637,7 @@ var templatePathAliases = map[string]string{
 
 > 预期 1000 个模板的渲染时间从 ~1s 降到 ~300ms。
 
-### 5.14.2 并发渲染
+### 5.13.2 并发渲染
 
 ```go
 // internal/codegen/applier.go
@@ -803,23 +658,22 @@ func (a *Applier) renderAll(plan *Plan, eng *template.Engine) error {
 
 > 对 IO 密集（写盘）效果显著。CPU 密集（gofumpt 多核）也有收益。
 
-## 5.15 与 osbuilder 模板系统的对比总结
+## 5.14 与 osbuilder 模板系统的对比总结
 
 | 维度 | osbuilder | linctl |
 | --- | --- | --- |
 | 嵌入方案 | `rakyll/statik`（archived） | `//go:embed` |
 | 路径占位符 | 无（运行时拼接） | 模板路径含 `{{...}}` 占位 |
 | FuncMap 数量 | ~12 个 | ~40 个（命名/集合/控制 全覆盖） |
-| 包注释 / partial 命名空间 | 无 | 单一根 Template + ParseFS partials + Clone/Lookup 渲染（详见 §5.5 / §5.9） |
+| 模板复用 | partial / include（共享命名空间） | 不提供（生成后由用户自行复用，详见 §5.9） |
 | 失败提示 | 红色原文 | 模板路径 + 行号 + 数据上下文 + Hint |
-| Snapshot 测试 | 无 | 必有 |
 | 路径硬编码检查 | 无 | CI 强制 |
-| 预编译 | 无 | sync.Map 缓存 Clone+Parse 后的 *Template |
-| 并发渲染 | 串行 | errgroup 并发（每模板独立 Clone，互不污染） |
+| 预编译 | 无 | sync.Map 缓存 Parse 后的 *Template |
+| 并发渲染 | 串行 | errgroup 并发（每模板独立 Parse，无共享 root） |
 | missing key 行为 | 渲染成 `<no value>` 字符串 | `Option("missingkey=error")` 直接报错 |
 
 ---
 
 下一步阅读：[06-codegen-pipeline.md](./06-codegen-pipeline.md)
 
-_Last reviewed: 2026-04-25_
+_Last reviewed: 2026-04-26_

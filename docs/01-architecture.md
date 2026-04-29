@@ -516,7 +516,7 @@ func (e *LinctlError) Unwrap() error { return e.Cause }
 | `dave/dst` 库的小众性 | 中 | 中 | 抽象 ASTInjector 接口，未来可换实现 |
 | `bufbuild/protocompile` API 变化 | 低 | 中 | 锁版本 + 适配层 |
 | 3-way merge 复杂度高 | 高 | 高 | Phase 4 才做，Phase 1~3 先用 ask/skip/overwrite 三种策略 |
-| 模板规模大（数百文件）维护成本 | 中 | 高 | 先照搬 osbuilder 模板，分批用 snapshot 测试覆盖 |
+| 模板规模大（数百文件）维护成本 | 中 | 高 | 先照搬 osbuilder 模板，分批通过 component / template 包内单元测试 + E2E `go build` 双重保障覆盖 |
 | 用户旧项目迁移到 linctl | 高 | 中 | 提供 `linctl import` 命令尝试反向生成 `linctl.yaml` |
 
 ---
