@@ -34,7 +34,7 @@ const (
 	CodeBadGoMod        Code = 21 // go.mod 解析失败
 	CodeMultiAppNoFlag  Code = 22 // 多 app 但未传 --app
 	CodeBadResourceName Code = 23 // 资源名不合法（非 PascalCase 等）
-	CodeAnchorMissing   Code = 24 // 锚点注释缺失
+	CodeSymbolMissing   Code = 24 // AST 注入目标符号缺失（如接口/函数未定义）
 	CodeInjectFailed    Code = 25 // AST 注入失败但回滚成功
 	CodeRollbackFailed  Code = 26 // AST 注入失败且回滚失败（人工介入）
 	CodeAddCancelled    Code = 27 // 用户取消
@@ -65,7 +65,7 @@ const (
 // AST 层内部码（50-59，仅由 add 触发）。
 const (
 	CodeASTParseError    Code = 50
-	CodeASTAnchorMissing Code = 51
+	CodeASTSymbolMissing Code = 51 // 内部码：AST 找不到目标符号
 	CodeASTApplyError    Code = 52
 	CodeASTBackupFailed  Code = 53
 )
@@ -164,8 +164,8 @@ func mapToUserCode(cmd string, internal Code) Code {
 
 	// AST 层 (50-59) → 仅 add 关心
 	switch internal {
-	case CodeASTAnchorMissing:
-		return CodeAnchorMissing // 24
+	case CodeASTSymbolMissing:
+		return CodeSymbolMissing // 24
 	case CodeASTBackupFailed:
 		return CodeRollbackFailed // 26
 	case CodeASTParseError, CodeASTApplyError:

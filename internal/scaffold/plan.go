@@ -56,18 +56,6 @@ type InjectSpec struct {
 	Payload any         // 由具体 mutator 解释的负载
 }
 
-// BuildPlan 根据 ctx 与 kind 计算当前操作的 Plan。
-//
-// MVP 阶段返回 placeholder error；具体实现由 Phase 2/3 stage 提供。
-func BuildPlan(ctx *Context, kind PlanKind) (*Plan, error) {
-	if ctx == nil {
-		return nil, errs.New(errs.CodeInvalidArg, "scaffold.BuildPlan: nil ctx")
-	}
-	// TODO(Phase 2): 项目骨架文件清单
-	// TODO(Phase 3): 资源骨架文件清单 + AST 注入清单
-	return nil, errPhase1Stub
-}
-
 // errPhase1Stub 是 Phase 1 阶段对未实现方法的统一占位错误。
 var errPhase1Stub = errs.New(
 	errs.CodeUnknown,

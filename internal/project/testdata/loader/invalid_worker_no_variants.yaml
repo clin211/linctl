@@ -1,9 +1,0 @@
-apiVersion: linctl.dev/v1
-kind: Project
-metadata:
-  name: hello
-  module: github.com/foo/hello
-spec:
-  components:
-    - kind: Worker
-      name: w1

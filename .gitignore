@@ -1,6 +1,7 @@
 # Build artifacts
 _output/
 dist/
+lin
 *.test
 *.out
 coverage.html

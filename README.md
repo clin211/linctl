@@ -1,141 +1,159 @@
-# linctl
+# lin v2
 
 [![CI](https://github.com/clin211/lin/actions/workflows/ci.yml/badge.svg)](https://github.com/clin211/lin/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/clin211/lin.svg)](https://pkg.go.dev/github.com/clin211/lin)
 
-> **声明式、Plan/Apply 范式的 Go 微服务脚手架。** ✨
->
-> 生成可幂等重跑、AST 友好的代码（不会覆盖你的修改）。设计灵感来自 Terraform 的 plan/apply 模型。
+> **lin** — 零摩擦、幂等友好的 Go 后端脚手架工具。两条命令，一次生成，重跑安全。
 
-## 快速开始
+---
+
+## 核心价值
+
+| 特性 | 说明 |
+|------|------|
+| **零摩擦上手** | `lin new` 生成完整 miniblog-v4 骨架，无需手写样板代码 |
+| **幂等重跑** | `lin add` 重复执行不会破坏既有代码（AST 注入基于锚点，跳过已有内容） |
+| **自我诊断** | `lin lint` 检查项目结构与 AST 完整性；`lin doctor` 检查工具链 |
+| **纯 Go** | 无外部依赖运行时；单二进制，嵌入所有模板 |
+
+---
+
+## 安装
 
 ```bash
-# 通过 Go 安装（Phase 1 完成）
-go install github.com/clin211/lin/cmd/linctl@latest
+go install github.com/clin211/lin/cmd/lin@latest
+```
 
-# 查看版本
-linctl version --output json
+或从源码构建：
 
-# 1. 生成一个新项目（Phase 1 MVP 已就绪）
-# Gin REST 项目：
-linctl new myblog \
+```bash
+git clone https://github.com/clin211/lin.git
+cd lin
+make build          # → _output/bin/lin
+```
+
+---
+
+## 快速上手
+
+### 1. 生成项目骨架
+
+```bash
+lin new myblog \
   --module github.com/foo/myblog \
-  --framework gin \
   --storage memory \
-  --features healthz
-
-# gRPC 项目（Phase 3 Story 3.1 第一波）：
-linctl new grpcdemo \
-  --module github.com/foo/grpcdemo \
-  --framework grpc \
-  --storage memory \
-  --features healthz
-
-# Worker 项目（Phase 3 Story 3.2 第一波）— cron / kafka / customized 三种 variant 可共存：
-linctl new reporter \
-  --module github.com/foo/reporter \
-  --kind Worker \
-  --variants cron,kafka,customized
-
-cd myblog
-
-# 2. 增量添加 REST 资源（Phase 2 已就绪）
-linctl add api Post       # 自动生成 3 个文件 + AST 注入 IBiz/IStore
-linctl add api Comment    # 再次注入，多 resource 共存
-linctl add api Post       # ✅ 幂等：0 文件改动
-
-# 3. 编译运行
-go mod tidy
-go build ./...
-./_output/bin/myblog          # 启动 HTTP 服务（默认 :8080）
-
-# 4. 验证 healthz
-curl http://localhost:8080/healthz
-# {"status":"ok"}
+  --features healthz \
+  --yes
 ```
 
-## 文档导航
-
-完整文档位于 [`docs/`](./docs/) 目录（17 份文档，覆盖架构、CLI 设计、代码生成管道、AST 注入、安全模型等）。
-
-推荐阅读顺序：
-
-- [docs/00-overview.md](./docs/00-overview.md) — 5 分钟读懂全貌
-- [docs/01-architecture.md](./docs/01-architecture.md) — L0–L4 分层架构
-- [docs/03-cli-design.md](./docs/03-cli-design.md) — 全部 CLI 命令与 flag
-- [docs/11-implementation-plan.md](./docs/11-implementation-plan.md) — Phase 1–5 路线图
-- [docs/META-fix-decisions-2026-04-25.md](./docs/META-fix-decisions-2026-04-25.md) — SSOT 决策书（开发必看）
-
-## 项目状态
-
-| Phase | 状态 | 说明 |
-|---|---|---|
-| **Phase 1（MVP）** | ✅ **已完成核心闭环** | `linctl new` 可生成 gin + memory/postgres + healthz 项目；E2E 验证通过 |
-| **Phase 2** | ✅ **全部 Story 完成** | Go AST + Proto AST 注入；冲突策略 skip/overwrite/ask（含 hash drift 检测）；LinctlError + RenderError + ConflictError 信息升级（Hint / Doc-link / line:col） |
-| **Phase 3** | 🟡 **Story 3.1 + 3.2 第一波完成** | gin/gRPC/Worker 三种项目类型均可 `linctl new` 生成且 `go build` 通过；Worker 支持 cron/kafka/customized 三 variant 共存；后续：grpc-gateway / Deploy 模板 / `linctl add worker` |
-| Phase 4 | ⏳ 计划中 | `plan` / `apply` / drift 检测 |
-| Phase 5 | ⏳ 计划中 | 插件生态 |
-
-详细 Story 进度见 [docs/11-implementation-plan.md §11.2](./docs/11-implementation-plan.md#112-phase-1mvp内核打通)。
-
-## Phase 1 + Phase 2 已实现能力
-
 ```
-✅ 15 个 Go 包，6500+ 行代码 + 测试
-✅ 二进制大小 10MB（远低于 ≤15MB 预算）
-✅ 测试覆盖率 75-93%（核心包）
-✅ E2E 验证 1：linctl new → go build → curl /healthz 全链路通过
-✅ E2E 验证 2：linctl add api Post → AST 注入 → go build 通过
-✅ Mutator 幂等性已验证：第二次 add api Post 改动 0 文件
+✔ project plan computed (40 files)
+✔ scaffold rendered into ./myblog
+📦 Next steps:
+   cd myblog
+   make deps
+   make protoc
+   make build
 ```
 
-| 包 | 职责 |
-|---|---|
-| `cmd/linctl` | 主入口（< 50 行） |
-| `internal/linctlerr` | 统一错误类型（LinctlError + Code） |
-| `internal/cli` | 命令行解析（cobra + version + new） |
-| `internal/version` | 版本元数据（含 ldflags 注入） |
-| `internal/project` | linctl.yaml 数据模型 + Loader + Defaults + Saver |
-| `internal/validate` | validator/v10 + 自定义规则（modulePath/projectName/...） |
-| `internal/template` | 模板引擎（单一根 Template + ParseFS + Clone） |
-| `internal/fs` | FileManager + 原子写 + flock + SafeJoin + hash 注释 |
-| `internal/codegen` | Pair / PairBuilder / Plan / Planner / Applier |
-| `internal/component` | Component 抽象 + WebServer 实现 |
-| `internal/feature` | Feature 接口 + Registry + 拓扑排序（环检测） |
-| `internal/feature/builtin` | healthz 内置 Feature |
-| `internal/orchestrator` | Plan→Apply 编排 + Reporter |
-| `internal/ast` | Go AST 注入（dst-based）：AddImportMutator + AddInterfaceMethodMutator + Batch + ConflictError（含 Hint）；Proto AST（protocompile）：AddProtoRPCMutator |
-| `internal/ui` | 终端交互：Confirmer 接口 + IOConfirmer（非 tty 自动 fallback）+ AlwaysYes/AlwaysNo/QueueConfirmer 测试桩 |
-
-## 开发指南
+### 2. 添加业务资源
 
 ```bash
-make tools          # 安装 pin 版本的工具（gofumpt v0.7.0、golangci-lint v1.59.1、mockgen v0.4.0 等）
-make all            # lint + test + build
-make build          # 输出 _output/bin/linctl
-make build-otel     # 启用 OpenTelemetry 的构建（默认不带，遵循 ≤15MB 预算）
-make test           # 运行测试（含 race + coverage）
-make cover          # 生成 HTML 覆盖率报告
+cd myblog
+lin add Post          # 生成 14 个文件 + 4 处 AST 注入
+lin add Comment       # 再次添加；重跑幂等
 ```
 
-## 与 osbuilder 的对比
+```
+✔ resource: Post
+   + 14 files created
+   ✏  4 files updated via AST
+📦 Next steps:
+   make protoc
+   go mod tidy
+   go build ./...
+```
 
-| 维度 | osbuilder | linctl |
-|---|---|---|
-| 模板嵌入 | `rakyll/statik`（已归档） | `embed.FS`（标准库） |
-| Go AST 注入 | `go/ast`（注释丢失） | `dave/dst`（保留注释/空行）|
-| 重入能力 | 一次性生成 + AST 追加 | `plan/apply` 完整闭环 + drift 检测 |
-| 特性扩展 | 改 `Pairs()` 函数 + 加 switch | 注册 `Feature` 插件 |
-| 错误处理 | 部分 `fmt.Printf` 吞错 | 统一 `LinctlError` + Code + Hint |
-| 二进制大小 | ~20 MB | **10 MB**（实测） |
-| 直接依赖 | ~45 | **9** |
+### 3. 校验项目健康
 
-## 贡献
+```bash
+lin lint              # 检查目录结构 + AST 锚点
+lin lint --fix        # 自动修复缺失的锚点注释
+lin doctor --offline  # 检查工具链（跳过网络检查）
+```
 
-参见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+---
 
-**重要**：所有设计变更必须先更新 [`docs/`](./docs/) 中的对应文档，并遵守 [SSOT 决策书](./docs/META-fix-decisions-2026-04-25.md) 中已锁定的 31 项决策。
+## 命令清单
 
-## License
+| 命令 | 说明 |
+|------|------|
+| `lin new <project>` | 生成新项目骨架（miniblog-v4 风格） |
+| `lin add <Resource>...` | 在已有项目中添加全栈业务资源 |
+| `lin lint [--fix]` | 校验项目结构与 AST 锚点完整性 |
+| `lin doctor [--offline]` | 检查本地工具链与运行环境 |
+| `lin version` | 打印版本信息 |
+| `lin completion <shell>` | 生成 shell 补全脚本（bash/zsh/fish/powershell） |
 
-MIT — 详见 [LICENSE](./LICENSE)。
+全局 flag：`--log-level` / `--log-format` / `-C, --chdir` / `--no-color` / `--non-interactive` / `-y, --yes`
+
+---
+
+## 生成的项目结构
+
+```
+myblog/
+├── cmd/myblog/                   # 主入口
+├── internal/myblog/
+│   ├── handler/                  # HTTP handlers (gin)
+│   ├── biz/v1/<resource>/        # 业务逻辑层
+│   ├── store/                    # 数据存储层
+│   └── model/                    # 数据模型
+├── internal/pkg/errno/           # 错误码统一管理
+├── pkg/api/<app>/v1/             # Proto 定义 + 占位 Go 类型
+└── ...
+```
+
+---
+
+## v1 → v2 迁移
+
+lin v2 重构了命令集，不再支持 v1 的 `plan/apply` 范式。
+
+| v1 命令 | v2 对应 | 说明 |
+|---------|---------|------|
+| `linctl plan` | `lin add --dry-run` | 预览生成计划 |
+| `linctl apply` | `lin add` | 执行生成 |
+| `linctl new` | `lin new` | 生成项目骨架 |
+| — | `lin lint` | v2 新增：AST 完整性检查 |
+| — | `lin doctor` | v2 新增：工具链检查 |
+
+v1 二进制（`cmd/linctl/`）在当前 repo 中已弃用，将在 v3 移除。
+
+详细迁移指引见 [docs/features/06-migration-plan.md](./docs/features/06-migration-plan.md)。
+
+---
+
+## 设计文档
+
+- [00 重构理由](./docs/features/00-refactor-rationale.md)
+- [01 架构蓝图](./docs/features/01-architecture-blueprint.md)
+- [02 命令集详细设计](./docs/features/02-command-set.md)
+- [03 资源骨架生成](./docs/features/03-resource-scaffold.md)
+- [04 模板系统](./docs/features/04-template-system.md)
+- [05 注册策略](./docs/features/05-registration-strategy.md)
+- [06 迁移计划](./docs/features/06-migration-plan.md)
+- [07 交互式 UX](./docs/features/07-interactive-ux.md)
+
+---
+
+## 开发
+
+```bash
+make all        # lint + test + build
+make test       # 单元测试（含 race detector）
+make e2e        # 端到端测试（new / add / lint / doctor）
+make vet        # go vet
+```
+
+需要 Go >= 1.22。

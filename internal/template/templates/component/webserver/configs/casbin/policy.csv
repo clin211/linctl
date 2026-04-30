@@ -1,4 +1,0 @@
-p, role:admin, /v1/*, *, allow
-p, role:user, /v1/*, GET, allow
-g, alice, role:admin
-g, bob, role:user

@@ -7,8 +7,6 @@
 //  2. 项目根目录 ./.lin/templates/
 //  3. 用户目录 ~/.lin/templates/
 //  4. embed.FS（本仓库内 internal/templates/）
-//
-// MVP 阶段 embed.FS 与具体模板内容由后续 stage 提供；本文件先建立加载骨架。
 package tpl
 
 import (
@@ -16,8 +14,13 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
+	"time"
+
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 
 	"github.com/clin211/lin/internal/pkg/errs"
 	"github.com/clin211/lin/internal/pkg/fsx"
@@ -97,10 +100,53 @@ func (l *Loader) Load(relPath string) (*template.Template, error) {
 	return nil, errs.New(errs.CodeTplNotFound, fmt.Sprintf("tpl: not found: %s", relPath))
 }
 
-// DefaultFuncs 返回 lin v2 的 funcMap（详见 04 §5）。MVP 阶段先留接口，
-// 在 Phase 2 由后续 stage 充实（strcase / inflection / Pascal / Has 等）。
+// DefaultFuncs 返回 lin v2 的 funcMap（详见 04 §5）。
 func DefaultFuncs() template.FuncMap {
-	return template.FuncMap{}
+	return template.FuncMap{
+		// 大小写转换（strcase）
+		// Pascal("post_item") → "PostItem"
+		"Pascal": strcase.ToCamel,
+		// Camel/LowerCamel("post_item") → "postItem"
+		"Camel":      strcase.ToLowerCamel,
+		"LowerCamel": strcase.ToLowerCamel,
+		// Snake("PostItem") → "post_item"
+		"Snake": strcase.ToSnake,
+		// Kebab("PostItem") → "post-item"
+		"Kebab": strcase.ToKebab,
+		// 大小写
+		"Lower": strings.ToLower,
+		"Upper": strings.ToUpper,
+		//nolint:staticcheck // strings.Title deprecated but acceptable here
+		"Title": strings.Title,
+		// 单复数（inflection）
+		"Plural":   inflection.Plural,
+		"Singular": inflection.Singular,
+		// 字符串操作
+		"Quote":      strconv.Quote,
+		"TrimPrefix": strings.TrimPrefix,
+		"TrimSuffix": strings.TrimSuffix,
+		"Replace":    strings.ReplaceAll,
+		// 集合
+		"Has": func(needle string, slice []string) bool {
+			for _, s := range slice {
+				if s == needle {
+					return true
+				}
+			}
+			return false
+		},
+		"Join": strings.Join,
+		// 时间
+		"Now":  func() string { return time.Now().Format(time.RFC3339) },
+		"Year": func() int { return time.Now().Year() },
+		// 条件：Default 当 v 为空时返回默认值 d
+		"Default": func(d, v string) string {
+			if v == "" {
+				return d
+			}
+			return v
+		},
+	}
 }
 
 func parseFromFile(path string) (*template.Template, error) {

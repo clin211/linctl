@@ -447,9 +447,9 @@ $ lin add Post Comment
 
 | 项目 | 说明 |
 | --- | --- |
-| **作用** | 静态检查项目骨架是否符合规范，并校验 AST 注入完整性 |
+| **作用** | 静态检查项目骨架是否符合规范，并校验注册一致性 |
 | **触发** | 在项目根目录执行 `lin lint` |
-| **副作用** | 默认只读；`--fix` 模式会修复部分问题（如补全锚点注释） |
+| **副作用** | 默认只读；`--fix` 预留接口，当前为 no-op（注册补齐建议直接运行 `lin add`） |
 | **不做** | `go vet` / `golangci-lint` 这类语义级检查（请用专用工具） |
 
 ### 5.2 完整 usage
@@ -458,7 +458,7 @@ $ lin add Post Comment
 lin lint [flags]
 
 Flags:
-      --fix                  Auto-fix issues (e.g. restore missing anchors)
+      --fix                  Auto-fix issues (reserved; currently no-op)
       --report-format string text|json (default "text")
       --rules strings        Subset of rule IDs to enable (default: all)
       --skip strings         Rule IDs to skip
@@ -466,70 +466,49 @@ Flags:
 
 ### 5.3 检查项
 
+注：lin v2 已移除"锚点注释"这一概念。所有 AST 注入完全基于 Go 语法结构（接口名、receiver 名、函数名）定位插入点，因此不再需要 `anchor/*` 类规则。
+
 | 类别 | 检查 ID | 说明 | `--fix` 行为 |
 | --- | --- | --- | --- |
 | 目录结构 | `dir/cmd-app` | `cmd/<app>/main.go` 存在 | ❌ 仅报错（创建空 main.go 风险大） |
 | 目录结构 | `dir/internal-app` | `internal/<app>/{handler,biz,store,model}` 存在 | ❌ 仅报错 |
-| AST 锚点 | `anchor/biz-imports` | `biz.go` 含 `// lin: inject-region:biz-imports` 起止 | ✅ 见 §5.3.1 |
-| AST 锚点 | `anchor/biz-interface` | `biz.go` 含 `// lin: inject-region:biz-interface` 起止 | ✅ |
-| AST 锚点 | `anchor/biz-impl` | `biz.go` 含 `// lin: inject-region:biz-impl` 起止 | ✅ |
-| AST 锚点 | `anchor/store-interface` | `store.go` 含 `// lin: inject-region:store-interface` 起止 | ✅ |
-| AST 锚点 | `anchor/store-impl` | `store.go` 含 `// lin: inject-region:store-impl` 起止 | ✅ |
-| AST 锚点 | `anchor/errno-register` | `internal/pkg/errno/register.go` 含锚点 | ✅ |
-| 注册一致性 | `register/biz-impl` | 每个 `biz/v1/<resource>/` 都有对应 `IBiz.<Resource>V1()` | ⚠️ 通过 AST 注入补全（透明调用 add 内部 mutator） |
-| 注册一致性 | `register/store-impl` | 每个 `store/<resource>.go` 都注册到 `IStore` | ⚠️ 同上 |
-| 注册一致性 | `register/proto-import` | 每个 `<resource>.proto` 都被 `<app>.proto` import | ⚠️ 同上 |
-| 注册一致性 | `register/errno-call` | 每个 `internal/pkg/errno/<resource>.go` 都被 `register.go` 调用 | ⚠️ 同上 |
-| 模板规范 | `template/no-tab-leading` | 模板渲染产物不含尾随空格、tab 缩进 | ❌ 报错 |
-| 路径安全 | `safety/path-traversal` | 资源路径未跳出项目根 | ❌ 报错（`fsx.SafeJoin` 校验） |
+| 注册一致性 | `register/biz-impl` | 每个 `biz/v1/<resource>/` 都在 `biz.go` 出现（warning） | ⚠️ MVP 仅报告，提示运行 `lin add` |
+| 注册一致性 | `register/store-impl` | 每个 `store/<resource>.go` 都在 `store.go` 出现（warning） | ⚠️ 同上 |
+| 占位文件 | `lin/post-protoc-placeholder` | 提示 `_lin.go` 占位文件需 `make protoc` 后清理（info） | ❌ 不报错 |
+| 路径安全 | `safety/path-traversal` | 资源路径未跳出项目根（`fsx.SafeJoin` 校验） | ❌ 报错 |
 
-#### 5.3.1 `--fix` 三种修复语义
+#### 5.3.1 关于 `--fix`
 
-`--fix` 不是 "全自动修复一切"，而是**针对锚点缺失** 与 **注册不一致**：
-
-| 修复模式 | 触发条件 | 行为 |
-| --- | --- | --- |
-| **A. 锚点重建（仅插入注释）** | 锚点的 start/end 中**至少一个**缺失，且区域可识别 | 插入缺失的注释行；原代码不动 |
-| **B. 区域整体重写（从模板恢复）** | 锚点完全缺失且区域无法识别 | 从 `internal/templates/project/.../*.tpl` 重新渲染整段并合并；保留区域外用户代码 |
-| **C. 自动 add 补全** | 注册不一致（如 `biz/v1/post/` 存在但 `biz.go` 无对应方法） | 透明调用 `add` 内部的 mutator 补齐；备份到 `.lin/.backup/<ts>/` |
-
-`--fix` 输出区分三类修复：
+当前 `--fix` 仅作为占位 flag 保留，未真正执行修复操作。如发现 `register/*` 报告资源未注册，请直接运行：
 
 ```
-$ lin lint --fix
-A ✔ anchor/biz-interface     restored 2 anchor comments in internal/myblog/biz/biz.go
-B ✔ anchor/store-impl        rebuilt region in internal/myblog/store/store.go (from template)
-C ✔ register/biz-impl        injected PostV1() into biz.go (backup: .lin/.backup/20260429-112301/biz.go)
-
-3 fixed / 0 errors / 0 warnings
+lin add <Resource>
 ```
 
-#### 5.3.2 `--fix` 安全约束
-
-- 操作前**强制**做 `.lin/.backup/<ts>/` 备份（与 `add` 同路径）
-- `--fix` 不修改 user-written 代码（仅锚点注释 / 注册行）
-- 失败时**全部回滚**，与 `add` 事务语义一致
-- `--fix --dry-run` 仅打印计划（推荐 CI 使用）
+由于 AST 注入完全是幂等的（已存在的方法/语句会被跳过），重新运行 `lin add` 即可恢复一致性。
 
 ### 5.4 输出示例
 
 ```
 $ lin lint
-✘ anchor/biz-interface     internal/myblog/biz/biz.go: missing anchor "// lin: inject-region:biz-interface"
-✘ register/store-impl      internal/myblog/store/post.go has no registration in store.go
-ℹ run 'lin lint --fix' to restore anchors
+✔ dir/cmd-app          cmd/myblog/main.go exists
+✔ dir/internal-app     internal/myblog/{handler,biz,store,model} all exist
+✔ register/biz-impl    biz.go: registration consistent
+✔ register/store-impl  store.go: registration consistent
+ℹ lin/post-protoc-placeholder found 1 _lin.go placeholder(s): post_lin.go
+✔ safety/path-traversal no path traversal detected
 
-2 issues found.
+5 ok / 0 warning / 0 error
 ```
 
 `--report-format json` 输出结构化结果，便于 CI 集成：
 
 ```json
 {
-  "issues": [
-    {"id": "anchor/biz-interface", "file": "internal/myblog/biz/biz.go", "line": 0, "severity": "error", "message": "..."}
+  "items": [
+    {"category": "dir", "name": "dir/cmd-app", "status": "ok", "message": "cmd/myblog/main.go exists"}
   ],
-  "summary": {"errors": 2, "warnings": 0, "fixed": 0}
+  "summary": {"ok": 5, "errors": 0, "warnings": 0}
 }
 ```
 
@@ -537,9 +516,9 @@ $ lin lint
 
 | code | 含义 |
 | --- | --- |
-| `0` | 无问题（或 `--fix` 全部修复） |
+| `0` | 无问题 |
 | `30` | 至少一项 error |
-| `31` | `--fix` 部分失败 |
+| `31` | `--fix` 部分失败（保留语义，当前 `--fix` 为 no-op） |
 | `32` | 项目根识别失败 |
 
 ---
@@ -763,7 +742,7 @@ const (
     CodeBadGoMod        Code = 21  // go.mod 解析失败
     CodeMultiAppNoFlag  Code = 22  // 多 app 但未传 --app
     CodeBadResourceName Code = 23  // 资源名不合法（非 PascalCase 等）
-    CodeAnchorMissing   Code = 24  // 锚点注释缺失
+    CodeSymbolMissing   Code = 24  // AST 注入目标符号缺失（接口/函数未定义）
     CodeInjectFailed    Code = 25  // AST 注入失败但回滚成功
     CodeRollbackFailed  Code = 26  // AST 注入失败且回滚失败（人工介入）
     CodeAddCancelled    Code = 27  // 用户取消
@@ -794,7 +773,7 @@ const (
 // AST 层（50-59，透传给 add）
 const (
     CodeASTParseError    Code = 50
-    CodeASTAnchorMissing Code = 51
+    CodeASTSymbolMissing Code = 51  // 内部：AST 找不到目标符号
     CodeASTApplyError    Code = 52
     CodeASTBackupFailed  Code = 53
 )
@@ -856,8 +835,8 @@ func mapToUserCode(cmd string, internal Code) Code {
 
     // AST 层 (50-59) → 仅 add 关心
     switch internal {
-    case CodeASTAnchorMissing:                    // 51
-        return CodeAnchorMissing                  // 24
+    case CodeASTSymbolMissing:                    // 51
+        return CodeSymbolMissing                  // 24
     case CodeASTBackupFailed:                     // 53
         return CodeRollbackFailed                 // 26
     case CodeASTParseError, CodeASTApplyError:    // 50, 52

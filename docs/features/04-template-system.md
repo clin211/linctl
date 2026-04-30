@@ -321,7 +321,7 @@ var (
 )
 
 // IStore 定义存储层方法集合.
-// lin: inject-region:store-interface (do not remove this comment)
+// `lin add <Resource>` 通过 AST 直接定位 IStore 接口节点追加方法。
 type IStore interface {
     DB(ctx context.Context, wheres ...where.Where) *gorm.DB
     TX(ctx context.Context, fn func(ctx context.Context) error) error
@@ -329,7 +329,6 @@ type IStore interface {
     User() UserStore
     {{- end }}
 }
-// lin: inject-region-end
 
 // datastore 是 IStore 的具体实现.
 type datastore struct {
@@ -359,14 +358,12 @@ func (s *datastore) TX(ctx context.Context, fn func(ctx context.Context) error) 
 
 type transactionKey struct{}
 
-// lin: inject-region:store-impl (do not remove this comment)
 {{- if .Features | Has "user" }}
 func (s *datastore) User() UserStore { return newUserStore(s) }
 {{- end }}
-// lin: inject-region-end
 ```
 
-> **关键点**：`// lin: inject-region:` 锚点注释由 AST 注入识别（详见 [05-registration-strategy.md](./05-registration-strategy.md) §3.1）；模板初始化时根据 features 决定是否包含 `User()`。
+> **关键点**：lin v2 不再使用任何 `// lin: inject-region:` 锚点注释。AST 注入完全基于 Go 语法结构（接口名、receiver 名、函数名）定位插入点（详见 [05-registration-strategy.md](./05-registration-strategy.md) §3）；模板初始化仅根据 features 决定是否包含 `User()` 等可选方法。
 
 ---
 
@@ -563,7 +560,7 @@ func parseFromEmbed(relPath string) (*template.Template, error) {
 | 1 | 文件后缀统一 `.tpl`，最终输出去掉 `.tpl` | `handler.go.tpl` → `handler.go` |
 | 2 | 路径中不使用 `{{ }}`，由 lin 代码替换 | `cmd/app/main.go.tpl` → `cmd/myblog/main.go` |
 | 3 | Feature 控制用 `{{- if .Features \| Has "user" }}` | 不要拼接字符串 |
-| 4 | 锚点注释统一格式：`// lin: inject-region:<name>` | 见 §6.2 |
+| 4 | 不要在模板里写"占位注释"诱导 AST 注入；AST 注入直接基于结构识别 | 见 §6.2 |
 | 5 | 不允许模板内 `os.Exec` / 读环境变量 | 安全 |
 | 6 | 不允许包含作者本机路径 | 跨用户复用 |
 | 7 | 模板必须能在 macOS / Linux / Windows 渲染出一致结果 | 路径分隔符用 `filepath.ToSlash` |

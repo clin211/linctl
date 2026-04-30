@@ -1,8 +1,8 @@
 SHELL := /bin/bash
 
 # ===== 元数据 =====
-APP        := linctl
-PKG        := github.com/clin211/$(APP)
+APP        := lin
+PKG        := github.com/clin211/lin
 VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT     ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -19,10 +19,15 @@ BIN_DIR    := $(OUTPUT_DIR)/bin
 COVER_DIR  := $(OUTPUT_DIR)/coverage
 
 # ===== ldflags =====
+# Inject into internal/version package (used by version.Get())
+# Also inject into internal/cli package (version.go uses package-level vars)
 LDFLAGS := -s -w \
 	-X $(PKG)/internal/version.Version=$(VERSION) \
 	-X $(PKG)/internal/version.Commit=$(COMMIT) \
-	-X $(PKG)/internal/version.BuildDate=$(BUILD_DATE)
+	-X $(PKG)/internal/version.BuildDate=$(BUILD_DATE) \
+	-X $(PKG)/internal/cli.version=$(VERSION) \
+	-X $(PKG)/internal/cli.commit=$(COMMIT) \
+	-X $(PKG)/internal/cli.buildTime=$(BUILD_DATE)
 
 # ===== 默认目标 =====
 .PHONY: all
@@ -94,6 +99,15 @@ tools:
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
 		| sh -s -- -b $(shell go env GOPATH)/bin $(GOLANGCI_VERSION)
 
+# ===== E2E 测试 =====
+.PHONY: e2e
+e2e: build
+	@LIN_BIN=$(BIN_DIR)/$(APP) bash tests/e2e/new_test.sh
+	@LIN_BIN=$(BIN_DIR)/$(APP) bash tests/e2e/add_test.sh
+	@LIN_BIN=$(BIN_DIR)/$(APP) bash tests/e2e/add_idempotent_test.sh
+	@LIN_BIN=$(BIN_DIR)/$(APP) bash tests/e2e/lint_test.sh
+	@LIN_BIN=$(BIN_DIR)/$(APP) bash tests/e2e/doctor_test.sh
+
 # ===== 清理 =====
 .PHONY: clean
 clean:
@@ -107,6 +121,7 @@ help:
 	@echo "  make build-otel   - Build $(APP)-otel with OpenTelemetry support"
 	@echo "  make test         - Run unit tests with race detector + coverage"
 	@echo "  make cover        - Generate HTML coverage report"
+	@echo "  make e2e          - Run all E2E tests (new / add / add_idempotent / lint / doctor)"
 	@echo "  make lint         - Run golangci-lint"
 	@echo "  make fmt          - Format code with gofumpt"
 	@echo "  make fmt-check    - Verify code is gofumpt-clean"
