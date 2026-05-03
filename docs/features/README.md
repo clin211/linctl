@@ -1,6 +1,6 @@
-# lin 重构设计文档
+# lin 仓库 · linctl 重构设计文档
 
-> **目标**：把 `lin` 从「项目生命周期管理平台」回归到「项目骨架生成器」的本质定位。
+> **目标**：把本仓库发布的 **linctl**（Go module 仍为 `github.com/clin211/lin`）从「项目生命周期管理平台」回归到「项目骨架生成器」的本质定位。
 >
 > **核心矛盾**：当前实现 ~10,525 行 / 14 模块 / 15+ 子命令，远超用户实际需求（仅生成项目骨架 + 添加业务资源两件事）。
 >
@@ -19,7 +19,7 @@
 | 04 | [template-system.md](./04-template-system.md) | ✅ Stable | 简化的模板系统：embed + 外部目录覆盖 |
 | 05 | [registration-strategy.md](./05-registration-strategy.md) | ✅ Stable | 资源注册策略（AST 注入 + 锚点 + 幂等 + 事务） |
 | 06 | [migration-plan.md](./06-migration-plan.md) | ✅ Stable | 5 阶段迁移计划（17 工作日） |
-| 07 | [interactive-ux.md](./07-interactive-ux.md) | ✅ Stable | `lin new` / `lin add` 交互式终端 UX 设计 |
+| 07 | [interactive-ux.md](./07-interactive-ux.md) | ✅ Stable | `linctl new` / `linctl add` 交互式终端 UX 设计 |
 
 ---
 

@@ -2,9 +2,9 @@
 
 > **前置阅读**：[03-resource-scaffold.md](./03-resource-scaffold.md) §4「AST 注入点」
 >
-> 本文档定义 `lin add` 如何把新资源连接到中央接口、proto、错误码注册表。
+> 本文档定义 `linctl add` 如何把新资源连接到中央接口、proto、错误码注册表。
 >
-> ⚠️ 设计变更（2026-04-30）：lin v2 已完全去除「锚点注释」（`// lin: inject-region:*`）。所有 AST 注入直接基于 Go 语法结构（接口名、receiver 名、函数名）定位插入点。模板里**不会**也**不应该**出现任何注入区注释。
+> ⚠️ 设计变更（2026-04-30）：linctl v2 已完全去除「锚点注释」（`// lin: inject-region:*`）。所有 AST 注入直接基于 Go 语法结构（接口名、receiver 名、函数名）定位插入点。模板里**不会**也**不应该**出现任何注入区注释。
 
 ---
 
@@ -12,14 +12,14 @@
 
 ### 1.1 两类注册：约定式 vs AST 注入
 
-`lin add Post` 触发的注册操作分为两类：
+`linctl add Post` 触发的注册操作分为两类：
 
 | 类别 | 文件 | 实现 | 是否需要 lin 介入 |
 | --- | --- | --- | --- |
 | **约定式注册** | `internal/<app>/handler/post.go` | `init() + Register()` 闭包 | ❌ 无需 AST，handler 文件本身即注册 |
 | **AST 注入** | 4 个中央文件（见下表） | `dave/dst` / 文本插入 | ✅ 由 lin 自动改动 |
 
-> **handler 路由 ≠ AST 注入**：handler 通过 miniblog-v4 风格的 `init() { Register(...) }` 闭包**自注册**到全局路由表。`lin add` 只**创建** handler 文件，**不**注入到任何中央文件。
+> **handler 路由 ≠ AST 注入**：handler 通过 miniblog-v4 风格的 `init() { Register(...) }` 闭包**自注册**到全局路由表。`linctl add` 只**创建** handler 文件，**不**注入到任何中央文件。
 
 ### 1.2 4 类 AST 注入
 
@@ -68,7 +68,7 @@
 
 ### 2.3 事务性（Atomicity）
 
-`lin add Post` 的所有操作（创建 + 注入）作为单一事务：
+`linctl add Post` 的所有操作（创建 + 注入）作为单一事务：
 
 ```
 1. 创建临时备份点（.lin/.backup/<ts>/）
@@ -257,7 +257,7 @@ func AppendRegistration(file string, p RegisterPayload) error {
 
 ## 4. 模板要求（项目骨架阶段）
 
-`lin new` 生成的初始 `biz.go` / `store.go` / `register.go` **必须**满足以下结构：
+`linctl new` 生成的初始 `biz.go` / `store.go` / `register.go` **必须**满足以下结构：
 
 ### 4.1 `internal/<app>/biz/biz.go.tpl`
 
@@ -270,7 +270,7 @@ import (
 
 // IBiz defines the methods that must be implemented by the business layer.
 //
-// `lin add <Resource>` appends new methods to this interface via AST.
+// `linctl add <Resource>` appends new methods to this interface via AST.
 type IBiz interface {
 }
 
@@ -358,7 +358,7 @@ service MyblogService {
 
 ### 5.1 `.lin/` 工作目录与 `.gitignore` 契约
 
-`lin add` 在项目根创建 `.lin/` 工作目录用于事务、备份、模板缓存：
+`linctl add` 在项目根创建 `.lin/` 工作目录用于事务、备份、模板缓存：
 
 ```
 <project-root>/
@@ -369,7 +369,7 @@ service MyblogService {
 │   │   └── ...
 │   ├── templates/                 # 项目级模板覆盖（可选；用户提交）
 │   └── .last-run.json             # 最近一次操作的 audit log（可选）
-└── .gitignore                     # ← lin new 自动写入排除规则
+└── .gitignore                     # ← linctl new 自动写入排除规则
 ```
 
 **关键规则**：
@@ -380,7 +380,7 @@ service MyblogService {
 | `.lin/.last-run.json` | ❌ 永远不进 | `.lin/.last-run.json` |
 | `.lin/templates/` | ✅ 用户决定提交（团队共享） | 不排除 |
 
-`lin add` 执行前强校验：若项目 `.gitignore` 缺少 `.lin/.backup/` 行，会先自动追加（`⚠ updated .gitignore`）。
+`linctl add` 执行前强校验：若项目 `.gitignore` 缺少 `.lin/.backup/` 行，会先自动追加（`⚠ updated .gitignore`）。
 
 ### 5.2 备份生命周期
 
@@ -397,7 +397,7 @@ service MyblogService {
 当用户希望仅生成文件、跳过注入时（用于调试或手工合并）：
 
 ```bash
-lin add Post --no-inject
+linctl add Post --no-inject
 ```
 
 输出：
@@ -458,10 +458,10 @@ lin add Post --no-inject
 
 ```bash
 # tests/e2e/add_test.sh
-lin new myblog --module github.com/test/myblog --storage memory --yes --non-interactive
+linctl new myblog --module github.com/test/myblog --storage memory --yes --non-interactive
 cd myblog
-lin add Post                                             # 第一次
-lin add Post --yes --non-interactive                     # 第二次：应幂等
+linctl add Post                                             # 第一次
+linctl add Post --yes --non-interactive                     # 第二次：应幂等
 go build ./...                                            # 必须通过
 ```
 
@@ -474,7 +474,7 @@ go build ./...                                            # 必须通过
 | 注入点定位 | `// lin: inject-region:<name>` 注释 | Go AST 节点（接口/struct/函数名） |
 | 模板要求 | 必须包含 6 处 `inject-region` 占位 | 仅需保留正常的接口/函数声明 |
 | 错误模式 | anchor missing / duplicate / malformed | symbol missing（接口或函数未定义） |
-| `lin lint` 规则 | 8 条 `anchor/*` + register 规则 | 仅 `dir/*`、`register/*`、`safety/*` |
+| `linctl lint` 规则 | 8 条 `anchor/*` + register 规则 | 仅 `dir/*`、`register/*`、`safety/*` |
 | `--fix` 自动恢复 | 模式 A/B 重建锚点；模式 C 重新 add | 不再需要——只有"重新 add"一种模式 |
 | 误删容忍度 | 删锚点 → 注入失败 | 删占位 → 不影响（占位本来就不存在） |
 

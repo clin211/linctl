@@ -2,10 +2,10 @@ package store
 
 import (
 	"sync"
-{{- if ne .Storage "memory"}}
+{{- if and (ne .Storage "memory") (ne .Storage "mongo")}}
 	"context"
 
-	"{{.Module}}/pkg/store/where"
+	"github.com/clin211/linhub/store/where"
 	"gorm.io/gorm"
 {{- end}}
 )
@@ -14,7 +14,7 @@ import (
 //
 // `lin add <Resource>` appends new methods to this interface via AST.
 type IStore interface {
-{{- if ne .Storage "memory"}}
+{{- if and (ne .Storage "memory") (ne .Storage "mongo")}}
 	// DB returns the underlying *gorm.DB for direct access when needed.
 	DB(ctx context.Context, wheres ...where.Where) *gorm.DB
 	// TX executes fn inside a database transaction.
@@ -28,7 +28,7 @@ var (
 	S IStore
 )
 
-{{- if eq .Storage "memory"}}
+{{- if or (eq .Storage "memory") (eq .Storage "mongo")}}
 // memoryStore is an in-memory implementation of IStore.
 type memoryStore struct {
 	mu sync.RWMutex

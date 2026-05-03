@@ -33,7 +33,7 @@ type LintOptions struct {
 func Lint(rootDir string, opts LintOptions) (*Report, error) {
 	ctx, err := scaffold.LoadContext(rootDir, scaffold.Flags{})
 	if err != nil {
-		return nil, errs.Wrap(errs.CodeLintNoProject, "lint: not a valid lin project", err)
+		return nil, errs.Wrap(errs.CodeLintNoProject, "lint: not a valid linctl project", err)
 	}
 
 	skipSet := make(map[string]bool, len(opts.Skip))
@@ -66,7 +66,7 @@ func Lint(rootDir string, opts LintOptions) (*Report, error) {
 				Name:     "dir/cmd-app",
 				Status:   "error",
 				Message:  fmt.Sprintf("cmd/%s/main.go not found", app),
-				Hint:     "expected lin v2 layout",
+				Hint:     "expected linctl v2 layout",
 			})
 		} else {
 			report.addItem(Item{
@@ -91,7 +91,7 @@ func Lint(rootDir string, opts LintOptions) (*Report, error) {
 				Name:     "dir/internal-app",
 				Status:   "error",
 				Message:  fmt.Sprintf("internal/%s missing: %s", app, strings.Join(missing, ", ")),
-				Hint:     "run 'lin new' to create the expected layout",
+				Hint:     "run 'linctl new' to create the expected layout",
 			})
 		} else {
 			report.addItem(Item{
@@ -202,9 +202,9 @@ func checkRegisterConsistency(report *Report, rootDir, app, kind string, opts Li
 	}
 
 	if len(missing) > 0 {
-		hint := "run 'lin add <Resource>' to fix registration"
+		hint := "run 'linctl add <Resource>' to fix registration"
 		if opts.Fix {
-			hint = "auto-add not implemented in MVP; run 'lin add <Resource>' manually"
+			hint = "auto-add not implemented in MVP; run 'linctl add <Resource>' manually"
 		}
 		report.addItem(Item{
 			Category: "register",

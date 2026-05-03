@@ -11,9 +11,12 @@ import (
 
 func newNewCmd(g *Globals) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "new <project-name>",
-		Short:        "Generate a new Go project skeleton",
-		Long:         `Generate a fresh miniblog-v4 style project skeleton.`,
+		Use:   "new [project-name]",
+		Short: "Generate a new Go project skeleton",
+		Long: `Generate a fresh miniblog-v4 style project skeleton.
+
+In a terminal, run 'linctl new' with no arguments for an interactive wizard (Vite-style).
+In CI or scripts, pass the project directory name and --module (and usually --yes --non-interactive).`,
 		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -26,6 +29,7 @@ func newNewCmd(g *Globals) *cobra.Command {
 	flags.String("app-name", "", "Application name (default: derived from project-name)")
 	flags.String("framework", "gin", "Web framework: gin (MVP only)")
 	flags.String("storage", "memory", "Storage layer: memory|gorm-postgres|gorm-mysql|gorm-sqlite|mongo")
+	flags.String("cache", "none", "Cache: none|redis|bigcache")
 	flags.StringSlice("features", nil, "Optional features: otel,healthz,user,swagger,preloader")
 	flags.String("template-dir", "", "External template directory (overrides embed)")
 	flags.String("output-dir", ".", "Parent directory to create project in")
@@ -42,17 +46,16 @@ func newNewCmd(g *Globals) *cobra.Command {
 func runNew(cmd *cobra.Command, args []string, g *Globals) error {
 	flags := cmd.Flags()
 
-	// project-name 必填（非交互模式下）
-	if len(args) == 0 {
-		return errs.New(errs.CodeInvalidArg, "project-name is required").
-			WithHint("usage: lin new <project-name> --module <module-path>")
+	projectName := ""
+	if len(args) > 0 {
+		projectName = args[0]
 	}
-	projectName := args[0]
 
 	module, _ := flags.GetString("module")
 	appName, _ := flags.GetString("app-name")
 	framework, _ := flags.GetString("framework")
 	storage, _ := flags.GetString("storage")
+	cache, _ := flags.GetString("cache")
 	features, _ := flags.GetStringSlice("features")
 	templateDir, _ := flags.GetString("template-dir")
 	outputDir, _ := flags.GetString("output-dir")
@@ -61,9 +64,22 @@ func runNew(cmd *cobra.Command, args []string, g *Globals) error {
 	force, _ := flags.GetBool("force")
 	dryRun, _ := flags.GetBool("dry-run")
 
-	// 全局 --yes / --non-interactive 也覆盖局部
-	if g.Yes {
-		// no-op, confirmation is already skipped
+	if projectName == "" {
+		if g.NonInteractive || !stdinIsTerminal() {
+			return errs.New(errs.CodeInvalidArg, "project-name is required").
+				WithHint("in a terminal, run `linctl new` for interactive mode; in CI use: linctl new <name> --module <path> --yes --non-interactive")
+		}
+		var err error
+		projectName, module, storage, cache, outputDir, features, err = runNewInteractiveWizard(g, dryRun)
+		if err != nil {
+			return err
+		}
+	} else {
+		var err error
+		module, err = promptModuleIfNeeded(g, projectName, module)
+		if err != nil {
+			return err
+		}
 	}
 
 	sf := scaffold.Flags{
@@ -72,6 +88,7 @@ func runNew(cmd *cobra.Command, args []string, g *Globals) error {
 		AppName:     appName,
 		Framework:   framework,
 		Storage:     storage,
+		Cache:       cache,
 		Features:    features,
 		TemplateDir: templateDir,
 		OutputDir:   outputDir,

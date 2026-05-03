@@ -18,7 +18,7 @@
 
 这两件事不需要：声明式 `plan/apply` 闭环、drift 检测、3-way merge、模板上游同步、复杂的 Feature 插件机制。
 
-**重构核心动作**：以「**简单 over 全能**」为最高原则，砍掉 ~50-70% 的代码与子命令，把 `lin` 重新定位为**纯粹的、一次性的、约定优于配置的 Go 项目骨架生成器**。
+**重构核心动作**：以「**简单 over 全能**」为最高原则，砍掉 ~50-70% 的代码与子命令，把 **linctl** 重新定位为**纯粹的、一次性的、约定优于配置的 Go 项目骨架生成器**。
 
 ---
 
@@ -114,11 +114,11 @@ linctl
 
 ---
 
-## 3. 重新定位：lin 是什么 / 不是什么
+## 3. 重新定位：linctl 是什么 / 不是什么
 
 ### 3.1 一句话定位（重写）
 
-> **`lin` 是一款**专注于 Go 后端服务的极简骨架生成器**，遵循 `miniblog-v4` 的分层架构（cmd / internal/{app}/{handler,biz,store,model,pkg} / internal/pkg / pkg / api）。**
+> **`linctl` 是一款**专注于 Go 后端服务的极简骨架生成器**，遵循 `miniblog-v4` 的分层架构（cmd / internal/{app}/{handler,biz,store,model,pkg} / internal/pkg / pkg / api）。**
 >
 > **它的使命是：让开发者在 30 秒内拿到一个可编译运行的项目骨架，在 5 秒内为既有项目加一个完整分层的业务资源。然后，工具退出舞台，把项目交还给开发者。**
 
@@ -163,7 +163,7 @@ linctl
 ### 4.1 命令集（最小集）
 
 ```
-lin
+linctl
 ├── new <project-name>               # 生成项目骨架
 ├── add <resource-name>              # 添加业务资源
 ├── version                          # 版本信息
@@ -194,12 +194,12 @@ lin
 
 ```
 lin/
-├── cmd/lin/main.go
+├── cmd/linctl/main.go
 ├── internal/
 │   ├── cli/                      # cobra 命令分发
 │   │   ├── root.go
-│   │   ├── new.go                # lin new 命令
-│   │   ├── add.go                # lin add 命令
+│   │   ├── new.go                # linctl new 命令
+│   │   ├── add.go                # linctl add 命令
 │   │   └── version.go
 │   ├── scaffold/                 # 骨架生成核心
 │   │   ├── project.go            # 项目骨架生成器
@@ -259,7 +259,7 @@ lin/
 
 ### 5.3 资源生成的"完整度"
 
-**问题**：`lin add post` 应该生成多少个文件？
+**问题**：`linctl add post` 应该生成多少个文件？
 
 | 方案 | 文件层级 | 文件数 | 适用场景 |
 | --- | --- | --- | --- |
@@ -299,8 +299,8 @@ lin/
 
 | 方案 | 含义 |
 | --- | --- |
-| **A. 完全删除** | 所有参数随 `lin new` / `lin add` 命令传入 |
-| **B. 保留但作为「初始化记忆」** | `lin new` 时记录用户选择，`lin add` 时复用（如 module path、storage 类型） |
+| **A. 完全删除** | 所有参数随 `linctl new` / `linctl add` 命令传入 |
+| **B. 保留但作为「初始化记忆」** | `linctl new` 时记录用户选择，`linctl add` 时复用（如 module path、storage 类型） |
 | **C. 保留完整 schema** | 类似当前 |
 
 **我的建议**：**B**。生成项目时写一个**极简 `lin.yaml`**，只记录:
@@ -313,7 +313,7 @@ storage: gorm-postgres
 features: [otel, healthz]
 ```
 
-这样 `lin add post` 不需要重复传一堆 flag，体验更好。**但这个 yaml 不是状态文件，只是参数记忆**。
+这样 `linctl add post` 不需要重复传一堆 flag，体验更好。**但这个 yaml 不是状态文件，只是参数记忆**。
 
 ---
 
@@ -360,7 +360,7 @@ lin/docs/features/
 ├── 04-template-system.md          ✅ 简化的模板系统
 ├── 05-registration-strategy.md    ✅ 资源注册策略（AST 注入）
 ├── 06-migration-plan.md           ✅ 从当前 lin → 新版的迁移步骤
-├── 07-interactive-ux.md           ✅ 交互式终端 UX（lin new / lin add 向导）
+├── 07-interactive-ux.md           ✅ 交互式终端 UX（linctl new / linctl add 向导）
 └── README.md                       ✅ 索引
 ```
 
@@ -406,7 +406,7 @@ lin/docs/features/
 - AST 注入需要的元信息（module path / app name / resource name）必须从**项目现状**推断：
   - `module` ← 读 `go.mod`
   - `appName` ← `cmd/<app>/` 单一子目录推断；多个则要求 `--app` flag
-  - `resourceName` ← 命令参数 `lin add <Name>`
+  - `resourceName` ← 命令参数 `linctl add <Name>`
 - `lint` 命令在没有 yaml 的前提下，仅校验**目录结构 + AST 注入完整性 + import 正确性**，不做 schema 校验。
 
 由「§5.4 外部模板 + §5.5 删除 feature」组合派生：
@@ -416,10 +416,10 @@ lin/docs/features/
 
 由「§5.3 全栈 + §5.2 AST 注入」组合派生：
 
-- `lin add post` 一次操作会**触动 ~12-15 个文件**：
+- `linctl add post` 一次操作会**触动 ~12-15 个文件**：
   - 创建 7-9 个文件（handler/biz/store/model/conversion/validation/errno/proto/...）
   - AST 注入修改 4-5 个中央文件（`biz.go` / `store.go` / `<app>.proto` / `errno` / 路由注册）
-- 这要求 `lin add` 必须有强幂等性（重复执行不破坏现有代码）。
+- 这要求 `linctl add` 必须有强幂等性（重复执行不破坏现有代码）。
 
 > 决策已固化，后续详细文档（[01](./01-architecture-blueprint.md) ~ [06](./06-migration-plan.md)）基于此展开。
 

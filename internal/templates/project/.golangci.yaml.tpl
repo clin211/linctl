@@ -42,7 +42,7 @@ linters-settings:
   forbidigo:
     forbid:
       - pattern: '^fmt\.Print(f|ln)?$'
-        message: "use log/slog instead of fmt.Print*"
+        message: "use github.com/clin211/linhub/log instead of fmt.Print*"
 
 issues:
   exclude-rules:

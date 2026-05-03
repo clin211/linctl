@@ -1,19 +1,31 @@
 #!/usr/bin/env bash
-# tests/e2e/new_test.sh - lin new end-to-end test
+# tests/e2e/new_test.sh - linctl new end-to-end test
 set -euo pipefail
 
-LIN_BIN=${LIN_BIN:-$PWD/_output/lin}
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$REPO_ROOT"
+
+LIN_BIN=${LIN_BIN:-"$REPO_ROOT/_output/bin/linctl"}
+case "$LIN_BIN" in /*) ;; *) LIN_BIN="$REPO_ROOT/$LIN_BIN" ;; esac
+
 if [ ! -x "$LIN_BIN" ]; then
-    echo "Building lin binary..."
-    go build -o "$LIN_BIN" ./cmd/lin
+    echo "Building linctl binary..."
+    mkdir -p "$(dirname "$LIN_BIN")"
+    go build -o "$LIN_BIN" ./cmd/linctl
 fi
+LIN_BIN="$(cd "$(dirname "$LIN_BIN")" && pwd)/$(basename "$LIN_BIN")"
 
 TMPDIR=$(mktemp -d -t lin-e2e-XXXXXX)
 trap "rm -rf $TMPDIR" EXIT
 
-cd "$TMPDIR"
+E2E_COMMON="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
+# shellcheck source=/dev/null
+source "$E2E_COMMON"
 
-echo "==> lin new --dry-run ..."
+cd "$TMPDIR"
+lin_e2e_link_linhub_replace "$TMPDIR" "$REPO_ROOT"
+
+echo "==> linctl new --dry-run ..."
 "$LIN_BIN" new myblog \
     --module github.com/test/myblog \
     --storage memory \
@@ -22,7 +34,7 @@ echo "==> lin new --dry-run ..."
     --non-interactive \
     --dry-run
 
-echo "==> lin new ..."
+echo "==> linctl new ..."
 "$LIN_BIN" new myblog \
     --module github.com/test/myblog \
     --storage memory \

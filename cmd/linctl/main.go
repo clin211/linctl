@@ -1,4 +1,4 @@
-// Package main 是 lin v2 的二进制入口。
+// Package main 是 linctl（lin v2）CLI 的二进制入口。
 //
 // 设计来源：lin/docs/features/01-architecture-blueprint.md §3 「L0 入口层」。
 //
@@ -7,7 +7,7 @@
 //   - 调用 cli.Execute 执行命令
 //   - 把 error 通过 errs.CodeOf 映射到退出码
 //
-// 与 cmd/linctl/main.go（v1 入口）并存，互不影响。
+// 可执行文件名：linctl（Go module 路径仍为 github.com/clin211/lin）。
 package main
 
 import (

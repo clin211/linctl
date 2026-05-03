@@ -41,7 +41,7 @@
 └────────────────────────────┬─────────────────────────────┘
                              │ 未存在 ↓
 ┌──────────────────────────────────────────────────────────┐
-│  4. embed.FS（lin 二进制内置）                             │ ← 默认
+│  4. embed.FS（linctl 二进制内置）                             │ ← 默认
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -61,7 +61,7 @@
 
 ```
 templates/                                # 根
-├── project/                               # lin new 使用
+├── project/                               # linctl new 使用
 │   ├── go.mod.tpl
 │   ├── Makefile.tpl
 │   ├── README.md.tpl
@@ -115,7 +115,7 @@ templates/                                # 根
 │   └── docs/
 │       └── README.md.tpl
 │
-└── resource/                              # lin add 使用
+└── resource/                              # linctl add 使用
     ├── handler.go.tpl
     ├── biz/
     │   ├── biz_iface.go.tpl              # 资源接口部分
@@ -139,7 +139,7 @@ templates/                                # 根
 
 | 占位符 | 替换时机 | 替换为 |
 | --- | --- | --- |
-| `app/` 段 | `lin new` / `lin add` 渲染时 | `<AppName>/`（如 `myblog/`） |
+| `app/` 段 | `linctl new` / `linctl add` 渲染时 | `<AppName>/`（如 `myblog/`） |
 
 资源路径**不**使用占位符；由代码根据 `Plan.FileSpec.DestPath` 直接拼接：
 
@@ -165,7 +165,7 @@ templates/resource/biz/verb_create.go.tpl   →   internal/myblog/biz/v1/post/cr
 
 ## 4. 模板变量定义
 
-### 4.1 项目级变量（`lin new` 时可用）
+### 4.1 项目级变量（`linctl new` 时可用）
 
 ```go
 type ProjectVars struct {
@@ -193,7 +193,7 @@ type ProjectVars struct {
 }
 ```
 
-### 4.2 资源级变量（`lin add` 时可用）
+### 4.2 资源级变量（`linctl add` 时可用）
 
 ```go
 type ResourceVars struct {
@@ -321,7 +321,7 @@ var (
 )
 
 // IStore 定义存储层方法集合.
-// `lin add <Resource>` 通过 AST 直接定位 IStore 接口节点追加方法。
+// `linctl add <Resource>` 通过 AST 直接定位 IStore 接口节点追加方法。
 type IStore interface {
     DB(ctx context.Context, wheres ...where.Where) *gorm.DB
     TX(ctx context.Context, fn func(ctx context.Context) error) error
@@ -363,7 +363,7 @@ func (s *datastore) User() UserStore { return newUserStore(s) }
 {{- end }}
 ```
 
-> **关键点**：lin v2 不再使用任何 `// lin: inject-region:` 锚点注释。AST 注入完全基于 Go 语法结构（接口名、receiver 名、函数名）定位插入点（详见 [05-registration-strategy.md](./05-registration-strategy.md) §3）；模板初始化仅根据 features 决定是否包含 `User()` 等可选方法。
+> **关键点**：linctl v2 不再使用任何 `// lin: inject-region:` 锚点注释。AST 注入完全基于 Go 语法结构（接口名、receiver 名、函数名）定位插入点（详见 [05-registration-strategy.md](./05-registration-strategy.md) §3）；模板初始化仅根据 features 决定是否包含 `User()` 等可选方法。
 
 ---
 
@@ -386,7 +386,7 @@ mv internal/templates ../my-templates && cd ..
 # 修改 my-templates/...
 
 # 使用自定义模板
-lin new myblog --module github.com/foo/myblog --template-dir ./my-templates
+linctl new myblog --module github.com/foo/myblog --template-dir ./my-templates
 ```
 
 > **设计取舍**：MVP 不内置 `dump` 子命令，避免命令膨胀。如未来证实有强需求，作为 Phase 2+ 增量评估。
@@ -399,7 +399,7 @@ mkdir -p .lin/templates/resource
 cp ~/lin-source/internal/templates/resource/handler.go.tpl \
    .lin/templates/resource/handler.go.tpl
 # 修改后...
-lin add Post   # 自动使用 .lin/templates/resource/handler.go.tpl
+linctl add Post   # 自动使用 .lin/templates/resource/handler.go.tpl
 ```
 
 ### 7.3 用户级覆盖
@@ -408,7 +408,7 @@ lin add Post   # 自动使用 .lin/templates/resource/handler.go.tpl
 # 全局覆盖（所有项目）
 mkdir -p ~/.lin/templates
 # 放入团队风格的整套模板
-lin new myblog --module github.com/foo/myblog
+linctl new myblog --module github.com/foo/myblog
 ```
 
 ---
@@ -621,7 +621,7 @@ $HOME / ${HOME}                              ~/.bashrc（仅文档/注释）
 | 升级模板 | 修改后发布新版 lin；**不影响已生成项目** |
 | 团队定制 | fork lin 仓库或仅 fork templates 目录 |
 
-> **关键**：lin 不维护"模板版本号"、不跟踪"已生成项目用了哪个版本"；模板升级与已生成项目**完全解耦**。
+> **关键**：linctl 不维护"模板版本号"、不跟踪"已生成项目用了哪个版本"；模板升级与已生成项目**完全解耦**。
 
 ---
 
@@ -629,13 +629,13 @@ $HOME / ${HOME}                              ~/.bashrc（仅文档/注释）
 
 ### 12.1 wire 仅在**生成项目**中存在，不在 lin 自身依赖
 
-| 维度 | lin 工具 | 生成的项目（如 `myblog`） |
+| 维度 | linctl 工具 | 生成的项目（如 `myblog`） |
 | --- | --- | --- |
 | 是否依赖 wire | ❌ 不依赖 | ✅ 依赖 `github.com/google/wire` |
 | 用途 | n/a | 生成 `wire_gen.go` 完成 DI 装配 |
 | 依赖入口 | n/a | 生成项目的 `go.mod` 含 wire；`internal/<app>/biz/biz.go` 等含 `var ProviderSet = wire.NewSet(...)` |
 
-`lin` 自身的依赖清单（≤ 8 个）见 [01 §9 关键非功能需求](./01-architecture-blueprint.md#9-关键非功能需求)；**wire 不在其中**。
+**linctl** 自身的依赖清单（≤ 8 个）见 [01 §9 关键非功能需求](./01-architecture-blueprint.md#9-关键非功能需求)；**wire 不在其中**。
 
 ### 12.2 模板中 `wire.NewSet` 的用法
 
@@ -649,10 +649,10 @@ var ProviderSet = wire.NewSet(NewBiz, wire.Bind(new(IBiz), new(*biz)))
 
 | 阶段 | 操作 | 是否 lin 介入 |
 | --- | --- | --- |
-| `lin new` | 模板包含 `ProviderSet` 与 `wire.go`（手写的 `+build wireinject` 入口） | ✅ |
-| `lin add Post` | 自动改 `biz.go` 接口与工厂；**不修改 wire.go**（`ProviderSet` 已经覆盖新方法） | ✅ AST 注入 |
+| `linctl new` | 模板包含 `ProviderSet` 与 `wire.go`（手写的 `+build wireinject` 入口） | ✅ |
+| `linctl add Post` | 自动改 `biz.go` 接口与工厂；**不修改 wire.go**（`ProviderSet` 已经覆盖新方法） | ✅ AST 注入 |
 | 用户首次构建 | 必须手动跑 `make wire` 或 `wire ./...` 生成 `wire_gen.go` | ❌ lin 不调用 |
-| 后续 `lin add` | 同上；`ProviderSet` 自动覆盖；用户重跑 `make wire` 即可 | ❌ |
+| 后续 `linctl add` | 同上；`ProviderSet` 自动覆盖；用户重跑 `make wire` 即可 | ❌ |
 
 ### 12.3 wire 与 ProviderSet 的注入策略
 
@@ -666,11 +666,11 @@ var ProviderSet = wire.NewSet(NewBiz, wire.Bind(new(IBiz), new(*biz)))
 var ProviderSet = wire.NewSet(NewBiz, wire.Bind(new(IBiz), new(*biz)))
 ```
 
-> 因此 `lin add` **无需** AST 注入 `ProviderSet`；只注入 `IBiz` 接口与 `*biz` 工厂方法（[05 §3.1](./05-registration-strategy.md#31-mutator_interfacego---接口扩展)）。
+> 因此 `linctl add` **无需** AST 注入 `ProviderSet`；只注入 `IBiz` 接口与 `*biz` 工厂方法（[05 §3.1](./05-registration-strategy.md#31-mutator_interfacego---接口扩展)）。
 
 ### 12.4 next-step 提示用户跑 wire
 
-`lin add` 输出的 `📦 Next steps`（[02 §4.7](./02-command-set.md#47-输出示例)）包含：
+`linctl add` 输出的 `📦 Next steps`（[02 §4.7](./02-command-set.md#47-输出示例)）包含：
 
 ```
 📦 Next steps:
@@ -700,7 +700,7 @@ var ProviderSet = wire.NewSet(NewBiz, wire.Bind(new(IBiz), new(*biz)))
 - Go 工具链（`gofmt`/`go test`）在 Windows 也使用 LF；统一 LF 避免文件 hash 不稳定
 - `.gitattributes` 配合 `* text=auto eol=lf` 保证仓库内一致
 
-`lin new` 自动生成 `.gitattributes`：
+`linctl new` 自动生成 `.gitattributes`：
 
 ```gitattributes
 * text=auto eol=lf

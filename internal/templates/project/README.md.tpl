@@ -10,7 +10,10 @@
 
 - **Web Framework**: {{.Framework}}
 - **Storage**: {{.Storage}}
+- **Shared library**: [linhub](https://github.com/clin211/linhub) (`github.com/clin211/linhub`) — db, log, errx, core, store, options, etc.
 - **Language**: Go {{.GoVersion}}
+
+Local monorepo tip: `go.mod` includes `replace github.com/clin211/linhub => ../linhub` so the generated app builds next to your linhub checkout.
 
 ## Getting Started
 

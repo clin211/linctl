@@ -19,13 +19,13 @@ func newDoctorCmd(g *Globals) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "doctor",
 		Short: "Check local toolchain and runtime environment",
-		Long: `Doctor inspects the local environment for tools required by lin and the generated project.
+		Long: `Doctor inspects the local environment for tools required by linctl and the generated project.
 
 Checks include:
   - go/version        go >= 1.22 (error)
   - go/goflags        GOFLAGS must not contain -mod=vendor (warning)
   - git/version       git >= 2.30 (warning)
-  - tools/protoc      protoc in PATH (warning; needed for lin add --with proto)
+  - tools/protoc      protoc in PATH (warning; needed for linctl add --with proto)
   - tools/protoc-gen-go  protoc-gen-go in PATH (warning)
   - tools/wire        wire in PATH (warning)
   - system/terminal   TTY detection + terminal size + color support (info)
@@ -53,7 +53,7 @@ Exit codes:
 
 			if report.Summary.Errors > 0 {
 				return errs.New(errs.CodeDoctorErrors,
-					"doctor: environment has errors; fix the reported issues before using lin")
+					"doctor: environment has errors; fix the reported issues before using linctl")
 			}
 
 			if opts.Strict && report.Summary.Warnings > 0 {

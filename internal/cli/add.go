@@ -72,11 +72,11 @@ func runAdd(g *Globals) func(*cobra.Command, []string) error {
 			if g.NonInteractive {
 				return errs.New(errs.CodeInvalidArg,
 					"add: no resource names provided").
-					WithHint("usage: lin add Post [Comment...] [--with conversion,validation,proto,errno]")
+					WithHint("usage: linctl add Post [Comment...] [--with conversion,validation,proto,errno]")
 			}
 			return errs.New(errs.CodeInvalidArg,
 				"add: no resource names provided").
-				WithHint("usage: lin add Post [Comment...] [--with conversion,validation,proto,errno]")
+				WithHint("usage: linctl add Post [Comment...] [--with conversion,validation,proto,errno]")
 		}
 
 		// 3. Detect project root (working directory)

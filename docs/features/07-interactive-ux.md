@@ -4,7 +4,9 @@
 >
 > **设计灵感**：Vue CLI、Vite create、create-react-app、`npm create`、Cargo `cargo new` 风格
 >
-> 本文档定义 `lin new` 与 `lin add` 的**交互式默认体验**——用户无需记忆 flag，工具引导式收集参数。
+> 本文档定义 `linctl new` 与 `linctl add` 的**交互式默认体验**——用户无需记忆 flag，工具引导式收集参数。
+
+**实现状态（截至本文档末尾日期）**：`linctl new` 在 TTY 下已实现 **Survey v2** 向导（与下文「技术选型」中长期首推的 `huh` 不同，属当前落地选型）；`linctl add` **尚未**提供交互式向导，仍以 flag 为主。
 
 ---
 
@@ -15,19 +17,19 @@
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ Mode A: 交互式（默认）                                       │
-│   $ lin new                                                 │
+│   $ linctl new                                                 │
 │   → 进入向导，逐步询问                                        │
 │                                                             │
 │ Mode B: 部分 flag                                            │
-│   $ lin new myblog --module github.com/foo/myblog           │
+│   $ linctl new myblog --module github.com/foo/myblog           │
 │   → 已传的 flag 跳过对应 prompt，未传的继续问                │
 │                                                             │
 │ Mode C: 完全 flag (CI/脚本)                                  │
-│   $ lin new myblog --module ... --storage ... --yes         │
+│   $ linctl new myblog --module ... --storage ... --yes         │
 │   → 所有参数都传齐 + --yes 跳过最终确认                       │
 │                                                             │
 │ Mode D: 强制非交互                                           │
-│   $ lin new myblog --non-interactive --module ...           │
+│   $ linctl new myblog --non-interactive --module ...           │
 │   → 缺失参数直接报错（CI/脚本场景）                           │
 └────────────────────────────────────────────────────────────┘
 ```
@@ -52,7 +54,7 @@
 | --- | --- | --- |
 | **`charmbracelet/huh`** | 现代声明式 form；表单/字段/选择/确认/文本一体；视觉效果优秀；活跃维护 | ✅ **采用** |
 | `charmbracelet/bubbletea` | 底层 TUI 框架；更灵活但代码更重 | 备用（特殊场景） |
-| `AlecAivazis/survey/v2` | 经典选择；stable 但维护偏弱 | 不采用 |
+| `AlecAivazis/survey/v2` | 经典选择；stable 但维护偏弱 | ✅ **当前用于 `linctl new` TTY 向导**（长期可迁 `huh`） |
 | `manifoldco/promptui` | 简单；但维护停滞 | 不采用 |
 | `pterm` | 富 TUI 库；侧重渲染而非表单 | 仅用于结果展示 |
 
@@ -69,12 +71,12 @@ require (
 
 ---
 
-## 3. `lin new` 完整交互流程（Mockup）
+## 3. `linctl new` 完整交互流程（Mockup）
 
 ### 3.1 启动横幅
 
 ```
-$ lin new
+$ linctl new
    ┌──────────────────────────────────────────┐
    │   ✨ lin - Go Project Scaffolder          │
    │   v2.0.0  ·  miniblog-v4 style            │
@@ -207,12 +209,12 @@ $ lin new
 
 ---
 
-## 4. `lin add` 完整交互流程（Mockup）
+## 4. `linctl add` 完整交互流程（Mockup）
 
 ### 4.1 上下文检测
 
 ```
-$ lin add
+$ linctl add
 
   📂 Detected project context:
      Module:    github.com/foo/myblog
@@ -328,7 +330,7 @@ $ lin add
 
 ```bash
 # 部分 flag + 交互
-$ lin new myblog --module github.com/foo/myblog --storage gorm-postgres
+$ linctl new myblog --module github.com/foo/myblog --storage gorm-postgres
   
   → 跳过：项目名（已传 myblog）、module、storage
   → 仍然问：author/email（无 flag）、framework、features、deployment、git init...
@@ -336,7 +338,7 @@ $ lin new myblog --module github.com/foo/myblog --storage gorm-postgres
 
 ```bash
 # 完全 flag（CI 友好）
-$ lin new myblog \
+$ linctl new myblog \
     --module github.com/foo/myblog \
     --storage gorm-postgres \
     --features healthz,otel \
@@ -350,7 +352,7 @@ $ lin new myblog \
 
 ```bash
 # CI 环境（自动判定非交互）
-$ lin new myblog --module github.com/foo/myblog
+$ linctl new myblog --module github.com/foo/myblog
   在 GitHub Actions 中（无 TTY）：
   → 缺失参数：error: --storage is required in non-interactive mode
   → 退出码 2
@@ -572,7 +574,7 @@ func runNewInteractive(o *newOptions) error {
 ### 10.2 E2E 跑非交互即可
 
 ```bash
-lin new myblog \
+linctl new myblog \
   --module github.com/test/myblog \
   --storage gorm-postgres \
   --features healthz \
@@ -589,7 +591,7 @@ lin new myblog \
 
 | 场景 | 退出码 | 说明 |
 | --- | --- | --- |
-| 用户在 prompt 取消（ESC 多次或 Ctrl+C） | 130 | 干净退出，无副作用 |
+| 用户在 prompt 取消（Ctrl+C） | 14（`CodeUserCancelled`） | 干净退出，无副作用（进程级 SIGINT 仍为 130） |
 | 用户在确认对话拒绝 | 0 | 正常退出，无操作 |
 | 非交互模式缺失必要参数 | 2 | "missing required: --module" |
 | 不支持的选项值 | 2 | "unknown storage 'foo'" |
@@ -601,12 +603,12 @@ lin new myblog \
 
 | 命令 | 是否交互式 | 备注 |
 | --- | --- | --- |
-| `lin new` | ✅ 完整交互 | 见 §3 |
-| `lin add` | ✅ 完整交互 | 见 §4 |
-| `lin lint` | ❌ 无交互 | 直接输出报告 |
-| `lin doctor` | ❌ 无交互 | 直接输出环境表 |
-| `lin version` | ❌ 无交互 | 直接输出 |
-| `lin completion` | ❌ 无交互 | 输出脚本 |
+| `linctl new` | ✅ TTY 向导（Survey） | 见 §3；非 TTY 须传齐参数 |
+| `linctl add` | ❌ 规划 §4，未实现 | 当前为纯 flag / `--non-interactive` |
+| `linctl lint` | ❌ 无交互 | 直接输出报告 |
+| `linctl doctor` | ❌ 无交互 | 直接输出环境表 |
+| `linctl version` | ❌ 无交互 | 直接输出 |
+| `linctl completion` | ❌ 无交互 | 输出脚本 |
 
 ---
 
@@ -614,7 +616,7 @@ lin new myblog \
 
 [02-command-set.md](./02-command-set.md) 各命令的 Usage 段需补充：
 
-> **默认行为**：`lin new` / `lin add` 不传 flag 时进入交互式向导（见 [07-interactive-ux.md](./07-interactive-ux.md)）。已传的 flag 跳过对应 prompt。在非 TTY 环境（管道、CI）自动切换为非交互模式，缺参数报错。
+> **默认行为**：`linctl new` 在 TTY 下不传项目名时可进入交互式向导；已传的 flag 跳过对应 prompt；非 TTY 须传齐参数或 `--non-interactive`。`linctl add` 当前无向导，见 §12。
 
 ---
 
@@ -626,4 +628,4 @@ lin new myblog \
 
 ---
 
-_Last reviewed: 2026-04-29_
+_Last reviewed: 2026-05-01_

@@ -1,4 +1,4 @@
-# 贡献 lin
+# 贡献 linctl（lin 仓库）
 
 感谢你对 lin 感兴趣！本文档涵盖核心开发约定。
 
@@ -33,7 +33,7 @@ make all       # lint + test + build
 
 ```
 lin/
-├── cmd/lin/           # L0 入口层（≤ 50 行）
+├── cmd/linctl/        # L0 入口层（≤ 50 行）
 ├── internal/
 │   ├── cli/           # L1 命令分发层（cobra 命令注册）
 │   ├── scaffold/      # L2 核心生成层（context / plan / render / project / resource）

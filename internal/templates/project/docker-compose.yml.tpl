@@ -18,7 +18,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-{{- if ne .Storage "memory"}}
+{{- if eq .Storage "gorm-postgres"}}
 
   postgres:
     image: postgres:16-alpine
@@ -32,6 +32,26 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+{{- end}}
+{{- if eq .Cache "redis"}}
+
+  redis:
+    image: redis:7-alpine
+    container_name: {{.AppName}}-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+{{- end}}
+{{- if eq .Storage "mongo"}}
+
+  mongodb:
+    image: mongo:7
+    container_name: {{.AppName}}-mongodb
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+{{- end}}
+{{- if eq .Storage "gorm-postgres"}}
 
 volumes:
   postgres_data:

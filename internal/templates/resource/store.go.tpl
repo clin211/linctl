@@ -5,8 +5,8 @@ import (
 
 	"{{.Module}}/internal/{{.AppName}}/model"
 {{- if ne .Storage "memory"}}
-	genericstore "{{.Module}}/pkg/store"
-	"{{.Module}}/pkg/store/where"
+	genericstore "github.com/clin211/linhub/store"
+	"github.com/clin211/linhub/store/where"
 {{- end}}
 )
 
@@ -85,7 +85,7 @@ func (s *{{.Resource | LowerCamel}}Store) List(_ context.Context, offset, limit 
 type {{.Resource | Pascal}}Store interface {
 	Create(ctx context.Context, obj *model.{{.Resource | Pascal}}M) error
 	Update(ctx context.Context, obj *model.{{.Resource | Pascal}}M) error
-	Delete(ctx context.Context, opts *where.Options) error
+	Delete(ctx context.Context, opts *where.Options) (int64, error)
 	Get(ctx context.Context, opts *where.Options) (*model.{{.Resource | Pascal}}M, error)
 	List(ctx context.Context, opts *where.Options) (int64, []*model.{{.Resource | Pascal}}M, error)
 }

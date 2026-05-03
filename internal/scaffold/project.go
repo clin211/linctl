@@ -113,6 +113,16 @@ func shouldSkipTemplate(tplPath string, ctx *Context) bool {
 			return true
 		}
 	}
+	p := filepath.ToSlash(tplPath)
+	if ctx.Storage == "mongo" && strings.HasSuffix(p, "/pkg/db/open.go.tpl") {
+		return true
+	}
+	if ctx.Cache != "redis" && strings.HasSuffix(p, "/pkg/cache/redis.go.tpl") {
+		return true
+	}
+	if ctx.Cache != "bigcache" && strings.HasSuffix(p, "/pkg/cache/bigcache.go.tpl") {
+		return true
+	}
 	return false
 }
 
@@ -171,6 +181,9 @@ func printPlanSummary(plan *Plan, ctx *Context) {
 	fmt.Printf("  Module:   %s\n", ctx.Module)
 	fmt.Printf("  AppName:  %s\n", ctx.AppName)
 	fmt.Printf("  Storage:  %s\n", ctx.Storage)
+	if ctx.Cache != "" && ctx.Cache != "none" {
+		fmt.Printf("  Cache:    %s\n", ctx.Cache)
+	}
 	if len(ctx.Features) > 0 {
 		fmt.Printf("  Features: %s\n", strings.Join(ctx.Features, ", "))
 	}

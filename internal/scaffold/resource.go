@@ -302,7 +302,7 @@ func validateResourceName(name string) error {
 	if !unicode.IsUpper(rune(name[0])) {
 		return errs.New(errs.CodeBadResourceName,
 			fmt.Sprintf("scaffold: resource name %q must start with uppercase (PascalCase)", name)).
-			WithHint("example: lin add Post  (not post)")
+			WithHint("example: linctl add Post  (not post)")
 	}
 	for _, ch := range name {
 		if !unicode.IsLetter(ch) && !unicode.IsDigit(ch) {
@@ -378,7 +378,7 @@ func ensureGitignore(rootDir, _ string) {
 	if !strings.HasSuffix(content, "\n") {
 		content += "\n"
 	}
-	content += "\n# lin scaffolding tool runtime files\n" + backupLine + "\n.lin/.last-run.json\n"
+	content += "\n# linctl scaffolding tool runtime files\n" + backupLine + "\n.lin/.last-run.json\n"
 	_ = os.WriteFile(giPath, []byte(content), 0o644)
 	fmt.Println("   ⚠  updated .gitignore (added .lin/.backup/ exclusion)")
 }

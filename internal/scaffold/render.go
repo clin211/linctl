@@ -16,6 +16,7 @@ type templateVars struct {
 	AppName     string
 	ProjectName string
 	Storage     string
+	Cache       string
 	Framework   string
 	Features    []string
 	Resource    string // PascalCase resource name (e.g. "Post"), only set for lin add
@@ -33,6 +34,7 @@ func newTemplateVars(ctx *Context) templateVars {
 		AppName:     ctx.AppName,
 		ProjectName: ctx.ProjectName,
 		Storage:     ctx.Storage,
+		Cache:       ctx.Cache,
 		Framework:   ctx.Framework,
 		Features:    ctx.Features,
 		Resource:    ctx.Resource,

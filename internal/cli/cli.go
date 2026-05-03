@@ -1,13 +1,13 @@
-// Package cli is the cobra command-dispatch layer for lin v2.
+// Package cli is the cobra command-dispatch layer for linctl (lin v2).
 //
 // Layout convention:
 //   - cli.go        registers the root command and global flags.
-//   - add.go        `lin add <Resource>...`
-//   - new.go        `lin new <project>`
-//   - lint.go       `lin lint`
-//   - doctor.go     `lin doctor`
-//   - version.go    `lin version`
-//   - completion.go `lin completion <shell>`
+//   - add.go        `linctl add <Resource>...`
+//   - new.go        `linctl new <project>`
+//   - lint.go       `linctl lint`
+//   - doctor.go     `linctl doctor`
+//   - version.go    `linctl version`
+//   - completion.go `linctl completion <shell>`
 //
 // Design source: lin/docs/features/02-command-set.md §1, §2.
 package cli
@@ -36,13 +36,13 @@ func NewRootCmd() *cobra.Command {
 	g := &Globals{}
 
 	root := &cobra.Command{
-		Use:           "lin",
+		Use:           "linctl",
 		Short:         "Go project scaffolder (miniblog-v4 style)",
-		Long: `lin is a minimal scaffold generator for Go backend services.
+		Long: `linctl is a minimal scaffold generator for Go backend services.
 
 It does exactly two things:
-  1. lin new <project>        Generate a fresh project skeleton.
-  2. lin add <Resource>...    Add a full-stack resource to an existing project.
+  1. linctl new <project>        Generate a fresh project skeleton.
+  2. linctl add <Resource>...    Add a full-stack resource to an existing project.
 
 Plus a few helpers: lint / doctor / version / completion.`,
 		Version:       "2.0.0-rc1",
@@ -79,7 +79,7 @@ Plus a few helpers: lint / doctor / version / completion.`,
 	return root
 }
 
-// Execute 是 cmd/lin/main.go 调用的统一入口。
+// Execute 是 cmd/linctl/main.go 调用的统一入口。
 func Execute(ctx context.Context, args []string) error {
 	root := NewRootCmd()
 	root.SetArgs(args)

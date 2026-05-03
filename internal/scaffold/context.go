@@ -46,6 +46,9 @@ type Context struct {
 	// Storage 表示存储后端：memory | gorm-postgres | gorm-mysql | gorm-sqlite | mongo。
 	Storage string
 
+	// Cache 表示缓存后端：none | redis | bigcache。
+	Cache string
+
 	// Framework 表示 Web 框架：MVP 阶段仅支持 gin。
 	Framework string
 
@@ -82,6 +85,7 @@ type Flags struct {
 	AppName     string
 	Chdir       string
 	Storage     string
+	Cache       string
 	Framework   string
 	Features    []string
 	Resource    string
@@ -101,11 +105,17 @@ var moduleRe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]*\.[a-zA-Z]{2,}(/[a
 var appNameRe = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 var validStorages = map[string]bool{
-	"memory":       true,
+	"memory":        true,
 	"gorm-postgres": true,
-	"gorm-mysql":   true,
-	"gorm-sqlite":  true,
-	"mongo":        true,
+	"gorm-mysql":    true,
+	"gorm-sqlite":   true,
+	"mongo":         true,
+}
+
+var validCaches = map[string]bool{
+	"none":     true,
+	"redis":    true,
+	"bigcache": true,
 }
 
 var validFeatures = map[string]bool{
@@ -116,17 +126,43 @@ var validFeatures = map[string]bool{
 	"preloader": true,
 }
 
+// ValidateProjectName 校验目录名将能规范为合法的 AppName（[a-z][a-z0-9_]*）。
+func ValidateProjectName(projectName string) error {
+	if strings.TrimSpace(projectName) == "" {
+		return errs.New(errs.CodeInvalidArg, "scaffold: project name is empty")
+	}
+	app := strings.ToLower(strings.TrimSpace(projectName))
+	app = strings.ReplaceAll(app, "-", "_")
+	if !appNameRe.MatchString(app) {
+		return errs.New(errs.CodeInvalidArg,
+			fmt.Sprintf("invalid project name %q (normalized %q)", projectName, app)).
+			WithHint("use letters, digits, hyphen or underscore; must not start with a digit after normalization")
+	}
+	return nil
+}
+
+// ValidateModulePath 校验 Go module path（domain.tld/owner/...）。
+func ValidateModulePath(module string) error {
+	mod := strings.TrimSpace(module)
+	if mod == "" {
+		return errs.New(errs.CodeInvalidArg, "scaffold: module path is required").
+			WithHint("example: github.com/yourname/myproject")
+	}
+	if !moduleRe.MatchString(mod) {
+		return errs.New(errs.CodeBadModule,
+			fmt.Sprintf("scaffold: invalid module path %q", mod)).
+			WithHint("module must be like domain.tld/owner/name")
+	}
+	return nil
+}
+
 // NewContextFromFlags 用于 lin new：直接由 flags 构造（不需要推断）。
 func NewContextFromFlags(flags Flags) (*Context, error) {
-	// 1. 校验 module path
-	if flags.Module == "" {
-		return nil, errs.New(errs.CodeInvalidArg, "scaffold: --module is required").
-			WithHint("example: --module github.com/yourname/"+flags.ProjectName)
+	if err := ValidateProjectName(flags.ProjectName); err != nil {
+		return nil, err
 	}
-	if !moduleRe.MatchString(flags.Module) {
-		return nil, errs.New(errs.CodeBadModule,
-			fmt.Sprintf("scaffold: invalid module path %q", flags.Module)).
-			WithHint("module must be like domain.tld/owner/name")
+	if err := ValidateModulePath(flags.Module); err != nil {
+		return nil, err
 	}
 
 	// 2. 派生 AppName
@@ -151,6 +187,16 @@ func NewContextFromFlags(flags Flags) (*Context, error) {
 		return nil, errs.New(errs.CodeInvalidArg,
 			fmt.Sprintf("scaffold: unsupported storage %q", storage)).
 			WithHint("valid values: memory, gorm-postgres, gorm-mysql, gorm-sqlite, mongo")
+	}
+
+	cache := strings.TrimSpace(flags.Cache)
+	if cache == "" {
+		cache = "none"
+	}
+	if !validCaches[cache] {
+		return nil, errs.New(errs.CodeInvalidArg,
+			fmt.Sprintf("scaffold: unsupported cache %q", cache)).
+			WithHint("valid values: none, redis, bigcache")
 	}
 
 	// 4. 校验 Features
@@ -212,6 +258,7 @@ func NewContextFromFlags(flags Flags) (*Context, error) {
 		Module:      flags.Module,
 		AppName:     appName,
 		Storage:     storage,
+		Cache:       cache,
 		Framework:   framework,
 		Features:    flags.Features,
 		Templates:   loader,
@@ -269,7 +316,7 @@ func LoadContext(rootDir string, flags Flags) (*Context, error) {
 		if _, err := os.Stat(d); os.IsNotExist(err) {
 			return nil, errs.New(errs.CodeNotProjectRoot,
 				fmt.Sprintf("scaffold: expected directory %q not found", d)).
-				WithHint("lin v2 expects miniblog-v4 layout")
+				WithHint("linctl v2 expects miniblog-v4 layout")
 		}
 	}
 
@@ -277,9 +324,22 @@ func LoadContext(rootDir string, flags Flags) (*Context, error) {
 	storage := flags.Storage
 	if storage == "" {
 		storage = inferStorage(filepath.Join(projectRoot, "internal", appName, "store", "store.go"))
+		if storage == "memory" {
+			if m := inferStorageFromGoMod(filepath.Join(projectRoot, "go.mod")); m != "" {
+				storage = m
+			}
+		}
 	}
 	if !validStorages[storage] {
 		storage = "memory"
+	}
+
+	cache := strings.TrimSpace(flags.Cache)
+	if cache == "" {
+		cache = "none"
+	}
+	if !validCaches[cache] {
+		cache = "none"
 	}
 
 	// 6. GoVersion
@@ -306,6 +366,7 @@ func LoadContext(rootDir string, flags Flags) (*Context, error) {
 		Module:      module,
 		AppName:     appName,
 		Storage:     storage,
+		Cache:       cache,
 		Framework:   "gin",
 		Templates:   loader,
 		DryRun:      flags.DryRun,
@@ -337,7 +398,7 @@ func findProjectRoot(startDir string) (string, error) {
 	}
 	return "", errs.New(errs.CodeNotProjectRoot,
 		fmt.Sprintf("scaffold: no go.mod found from %q upward", startDir)).
-		WithHint("run `lin add` from inside a Go project (must have go.mod)")
+		WithHint("run `linctl add` from inside a Go project (must have go.mod)")
 }
 
 // readModulePath reads the first "module ..." line from go.mod.
@@ -405,6 +466,8 @@ func inferStorage(storePath string) string {
 		return "gorm-postgres"
 	case strings.Contains(src, "gorm.io") && strings.Contains(src, "driver/mysql"):
 		return "gorm-mysql"
+	case strings.Contains(src, "gorm.io") && strings.Contains(src, "driver/sqlite"):
+		return "gorm-sqlite"
 	case strings.Contains(src, "go.mongodb.org/mongo-driver"):
 		return "mongo"
 	case strings.Contains(src, "gorm.io"):
@@ -412,6 +475,53 @@ func inferStorage(storePath string) string {
 	default:
 		return "memory"
 	}
+}
+
+// inferStorageFromGoMod 检测 go.mod 是否将 mongo-driver 列为**直接**依赖（排除 // indirect），
+// 与「mongo 脚手架下 store 仍为 memory 形状」的场景配套。
+func inferStorageFromGoMod(gomodPath string) string {
+	data, err := os.ReadFile(gomodPath)
+	if err != nil {
+		return ""
+	}
+	return parseGoModForMongoDriver(string(data))
+}
+
+func parseGoModForMongoDriver(content string) string {
+	lines := strings.Split(content, "\n")
+	inRequireBlock := false
+	for _, line := range lines {
+		t := strings.TrimSpace(line)
+		if strings.HasPrefix(t, "require (") {
+			inRequireBlock = true
+			continue
+		}
+		if inRequireBlock {
+			if t == ")" {
+				inRequireBlock = false
+				continue
+			}
+			if strings.Contains(t, "// indirect") {
+				continue
+			}
+			fields := strings.Fields(t)
+			if len(fields) > 0 && strings.HasPrefix(fields[0], "go.mongodb.org/mongo-driver") {
+				return "mongo"
+			}
+			continue
+		}
+		if strings.HasPrefix(t, "require ") && !strings.Contains(t, "(") {
+			rest := strings.TrimSpace(strings.TrimPrefix(t, "require "))
+			if strings.Contains(rest, "// indirect") {
+				continue
+			}
+			fields := strings.Fields(rest)
+			if len(fields) > 0 && strings.HasPrefix(fields[0], "go.mongodb.org/mongo-driver") {
+				return "mongo"
+			}
+		}
+	}
+	return ""
 }
 
 // gitConfigValue 读取 git 全局配置的值（如 user.name/user.email）。

@@ -63,11 +63,11 @@ Checks include:
 				if opts.Fix {
 					return errs.New(errs.CodeFixPartial,
 						fmt.Sprintf("lint: %d issue(s) could not be auto-fixed", report.Summary.Errors)).
-						WithHint("run 'lin lint' without --fix for details")
+						WithHint("run 'linctl lint' without --fix for details")
 				}
 				return errs.New(errs.CodeLintIssues,
 					fmt.Sprintf("lint: %d issue(s) found", report.Summary.Errors)).
-					WithHint("review the report and re-run 'lin add <Resource>' if needed")
+					WithHint("review the report and re-run 'linctl add <Resource>' if needed")
 			}
 
 			return nil

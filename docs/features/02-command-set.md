@@ -4,14 +4,14 @@
 >
 > **协同文档**：[03-resource-scaffold.md](./03-resource-scaffold.md)（资源文件清单）、[05-registration-strategy.md](./05-registration-strategy.md)（AST 注入语义）、[07-interactive-ux.md](./07-interactive-ux.md)（交互式 UX 流程）
 >
-> 本文档定义重构后 lin 的 6 个子命令：**`new` / `add` / `lint` / `doctor` / `version` / `completion`**，以及每个命令的 flag、行为、错误码、退出码与典型用法。
+> 本文档定义 **linctl** 的 6 个子命令：**`new` / `add` / `lint` / `doctor` / `version` / `completion`**，以及每个命令的 flag、行为、错误码、退出码与典型用法。
 
 ---
 
 ## 1. 命令一览
 
 ```
-lin
+linctl
 ├── new <project-name>             # 生成新项目骨架（miniblog-v4 风格）
 ├── add <Resource>...              # 在已有项目中追加业务资源（含 AST 注入）
 ├── lint                           # 校验项目结构 + AST 完整性
@@ -54,17 +54,17 @@ lin
 | `--non-interactive` | bool | auto | 强制非交互式；非 TTY 自动为 true |
 | `-y, --yes` | bool | `false` | 跳过最终确认对话；不影响 prompt 收集 |
 | `-h, --help` | bool | `false` | cobra 自带 |
-| `-v, --version` | bool | `false` | 同 `lin version`（兼容 cobra 习惯） |
+| `-v, --version` | bool | `false` | 同 `linctl version`（兼容 cobra 习惯） |
 
 > **环境变量**：`LIN_LOG_LEVEL` / `LIN_NO_COLOR` / `LIN_NON_INTERACTIVE` 可作为 fallback，优先级低于 flag。
 
 ### 2.1 工作目录解析
 
-`-C` 与 `lin add` 的"项目根"识别配合规则：
+`-C` 与 `linctl add` 的"项目根"识别配合规则：
 
 ```
 1. 若传 -C <dir> → cd <dir>
-2. lin add 在当前目录起向上回溯，第一个含 go.mod 的目录视为「项目根」
+2. linctl add 在当前目录起向上回溯，第一个含 go.mod 的目录视为「项目根」
 3. 找到根后，所有相对路径（创建文件、AST 注入）以根为基准
 4. 若回溯到 / 仍未找到 go.mod → exit 20
 ```
@@ -74,12 +74,12 @@ lin
 ```bash
 $ pwd
 /Users/foo/myblog/internal/myblog/handler
-$ lin add Comment            # ✅ 自动回溯到 /Users/foo/myblog/
+$ linctl add Comment            # ✅ 自动回溯到 /Users/foo/myblog/
 $ cd /tmp
-$ lin -C /Users/foo/myblog add Comment   # ✅ 显式指定
+$ linctl -C /Users/foo/myblog add Comment   # ✅ 显式指定
 ```
 
-> `lin new` **不**回溯，因为新项目还没有 `go.mod`；目标目录由 `--output-dir` + `<project-name>` 计算。
+> `linctl new` **不**回溯，因为新项目还没有 `go.mod`；目标目录由 `--output-dir` + `<project-name>` 计算。
 
 ### 2.2 结构化日志字段（slog）
 
@@ -119,22 +119,33 @@ CI 可以基于此行做指标采集。
 
 ---
 
-## 3. `lin new` — 生成项目骨架
+## 3. `linctl new` — 生成项目骨架
 
 ### 3.1 概述
 
 | 项目 | 说明 |
 | --- | --- |
 | **作用** | 在指定目录生成一个 miniblog-v4 风格的 Go 后端服务骨架 |
-| **触发** | `lin new <project-name>` 或 `lin new`（交互式补全） |
+| **触发** | `linctl new <project-name>` 或 `linctl new`（交互式补全） |
 | **副作用** | 创建新目录 `<project-name>/` 并写入 ~40 个文件（含 `cmd/<app>/`、`cmd/gen-gorm-model/`、`pkg/db/`、`configs/<app>.yaml`、`Makefile` 等） |
 | **写入策略** | 目录不存在则创建；存在则报错（除非 `--force` 覆盖） |
 | **不做** | `git init` / `go mod download` / `make build`（用户在「Next steps」按需执行） |
 
+### 3.1.1 交互式与命令式（双模式，均需支持）
+
+| 模式 | 适用场景 | 典型用法 |
+| --- | --- | --- |
+| **交互式** | 本机 TTY、逐步问答（见 [07](./07-interactive-ux.md)） | `linctl new`；或 `linctl new myblog` 仅补问缺少的 `--module` |
+| **命令式 / CI** | 脚本、管道、无 TTY；须一次给齐参数 | `linctl new myblog --module github.com/foo/myblog --storage gorm-postgres --yes --non-interactive` |
+
+**约束**：非 TTY 或 `--non-interactive` 时，**不能**走向导；必须提供 `project-name`（positional）与 `--module`，否则报错并提示用法。全局 `--yes` 用于跳过向导内的最终确认。
+
+> **与 `add` 的区别**：`linctl add` 当前仅命令式（资源名须 positional / flag）；交互式向导若覆盖 `add`，见 [07 §12](./07-interactive-ux.md)。
+
 ### 3.2 完整 usage
 
 ```
-lin new <project-name> [flags]
+linctl new <project-name> [flags]
 
 Aliases: new, init
 
@@ -183,12 +194,12 @@ Inherited from root:
 8) 打印「Next steps」清单
 ```
 
-详细数据流参见 [01 §5「数据流：lin new」](./01-architecture-blueprint.md#5-数据流lin-new-命令)。
+详细数据流参见 [01 §5「数据流：linctl new」](./01-architecture-blueprint.md#5-数据流linctl-new-命令)。
 
 ### 3.5 输出示例
 
 ```
-$ lin new myblog --module github.com/foo/myblog --storage gorm-postgres --features otel,healthz --yes
+$ linctl new myblog --module github.com/foo/myblog --storage gorm-postgres --features otel,healthz --yes
 ✔ project plan computed (40 files)
 ✔ scaffold rendered into ./myblog
 📦 Next steps:
@@ -222,14 +233,14 @@ $ lin new myblog --module github.com/foo/myblog --storage gorm-postgres --featur
 
 ---
 
-## 4. `lin add` — 追加业务资源
+## 4. `linctl add` — 追加业务资源
 
 ### 4.1 概述
 
 | 项目 | 说明 |
 | --- | --- |
 | **作用** | 在已有项目中追加业务资源（含全栈分层文件 + AST 注入） |
-| **触发** | `lin add <Resource>...` 或 `lin add`（交互式） |
+| **触发** | `linctl add <Resource>...` 或 `linctl add`（交互式） |
 | **副作用** | 创建 13 个文件（默认全栈）+ AST 修改 4 个中央文件（参见 [03 §1](./03-resource-scaffold.md#1-资源分层总览)） |
 | **执行位置** | 在项目根或其任意子目录下执行；自动向上回溯找含 `go.mod` 的目录视为项目根（详见 [§2.1](#21-工作目录解析)）；找不到则报错 |
 | **不做** | `make protoc` / `go mod tidy`（用户在 Next steps 自行执行） |
@@ -237,7 +248,7 @@ $ lin new myblog --module github.com/foo/myblog --storage gorm-postgres --featur
 ### 4.2 完整 usage
 
 ```
-lin add <Resource>... [flags]
+linctl add <Resource>... [flags]
 
 Aliases: add, generate
 
@@ -267,7 +278,7 @@ Inherited from root:
 
 | flag | 默认行为 | 校验 |
 | --- | --- | --- |
-| `<Resource>...` | 至少 1 个；可批量 `lin add Post Comment` | PascalCase；首字符大写；不与既有资源冲突 |
+| `<Resource>...` | 至少 1 个；可批量 `linctl add Post Comment` | PascalCase；首字符大写；不与既有资源冲突 |
 | `--app` | 自动推断 `cmd/<app>/` 目录 | 多个 cmd 子目录时必填；详见 §4.4 |
 | `--with` | `conversion,validation,proto,errno` | 白名单子集；详见 [03 §5](./03-resource-scaffold.md#5---with----without-flag-控制矩阵) |
 | `--without` | `[]` | 与 `--with` 互斥（同传则 exit 23） |
@@ -280,7 +291,7 @@ Inherited from root:
 
 ### 4.4 上下文推断
 
-`lin add` 不依赖配置文件，运行时从项目现状推断元信息（详见 [01 §6 数据流](./01-architecture-blueprint.md#6-数据流lin-add-命令)）：
+`linctl add` 不依赖配置文件，运行时从项目现状推断元信息（详见 [01 §6 数据流](./01-architecture-blueprint.md#6-数据流linctl-add-命令)）：
 
 | 元信息 | 推断来源 | 缺失时 |
 | --- | --- | --- |
@@ -302,7 +313,7 @@ myblog/
         ├── biz/
         └── store/
 
-$ lin add Post              # ✅ 无需 --app
+$ linctl add Post              # ✅ 无需 --app
 ```
 
 #### 4.4.2 monorepo（多 cmd 子目录）
@@ -318,9 +329,9 @@ my-monorepo/
     ├── worker/
     └── cron/
 
-$ lin add Post              # ❌ exit 22 "multiple apps detected, use --app"
-$ lin add Post --app=api    # ✅ 仅向 internal/api/ 注入
-$ lin add Post --app=api,worker   # ❌ MVP 不支持多 app 同时注入
+$ linctl add Post              # ❌ exit 22 "multiple apps detected, use --app"
+$ linctl add Post --app=api    # ✅ 仅向 internal/api/ 注入
+$ linctl add Post --app=api,worker   # ❌ MVP 不支持多 app 同时注入
 ```
 
 #### 4.4.3 monorepo 行为约束
@@ -328,10 +339,10 @@ $ lin add Post --app=api,worker   # ❌ MVP 不支持多 app 同时注入
 | 维度 | 行为 |
 | --- | --- |
 | `--app` 取值 | 必须是 `cmd/<x>/` 的精确子目录名 |
-| 多 app 同时注入 | **MVP 不支持**；需多次 `lin add Post --app=X` |
+| 多 app 同时注入 | **MVP 不支持**；需多次 `linctl add Post --app=X` |
 | 共享 `internal/pkg/errno/` | 多次执行时**幂等**（`register.go` 的 `RegisterErrors(PostErrors()...)` 仅注入一次） |
 | 共享 `pkg/api/<app>/v1/` | 每个 app 独立目录，互不干扰 |
-| 资源命名冲突 | `lin add Post --app=api` 与 `lin add Post --app=worker` 各自注入，互相独立 |
+| 资源命名冲突 | `linctl add Post --app=api` 与 `linctl add Post --app=worker` 各自注入，互相独立 |
 
 #### 4.4.4 当 `cmd/` 不存在或非标准
 
@@ -370,11 +381,11 @@ $ lin add Post --app=api,worker   # ❌ MVP 不支持多 app 同时注入
 | --- | --- |
 | AST 已存在的注入点 | `⊝ skip`（不重复添加） |
 | AST 部分注入失败 | 回滚已成功的注入；exit 25 |
-| 锚点注释完全缺失 | `error`；提示用 `lin lint --fix` 恢复；exit 24 |
+| 锚点注释完全缺失 | `error`；提示用 `linctl lint --fix` 恢复；exit 24 |
 
 #### 4.6.2 文件冲突策略表
 
-`lin add` 创建文件时按以下决策树处理冲突：
+`linctl add` 创建文件时按以下决策树处理冲突：
 
 ```
               Resource 文件已存在?
@@ -410,7 +421,7 @@ $ lin add Post --app=api,worker   # ❌ MVP 不支持多 app 同时注入
 ### 4.7 输出示例
 
 ```
-$ lin add Post Comment
+$ linctl add Post Comment
 ✔ context loaded   module=github.com/foo/myblog appName=myblog storage=gorm-postgres
 ✔ resource: Post
    + 13 files created
@@ -441,21 +452,21 @@ $ lin add Post Comment
 
 ---
 
-## 5. `lin lint` — 校验项目结构与 AST 完整性
+## 5. `linctl lint` — 校验项目结构与 AST 完整性
 
 ### 5.1 概述
 
 | 项目 | 说明 |
 | --- | --- |
 | **作用** | 静态检查项目骨架是否符合规范，并校验注册一致性 |
-| **触发** | 在项目根目录执行 `lin lint` |
-| **副作用** | 默认只读；`--fix` 预留接口，当前为 no-op（注册补齐建议直接运行 `lin add`） |
+| **触发** | 在项目根目录执行 `linctl lint` |
+| **副作用** | 默认只读；`--fix` 预留接口，当前为 no-op（注册补齐建议直接运行 `linctl add`） |
 | **不做** | `go vet` / `golangci-lint` 这类语义级检查（请用专用工具） |
 
 ### 5.2 完整 usage
 
 ```
-lin lint [flags]
+linctl lint [flags]
 
 Flags:
       --fix                  Auto-fix issues (reserved; currently no-op)
@@ -466,13 +477,13 @@ Flags:
 
 ### 5.3 检查项
 
-注：lin v2 已移除"锚点注释"这一概念。所有 AST 注入完全基于 Go 语法结构（接口名、receiver 名、函数名）定位插入点，因此不再需要 `anchor/*` 类规则。
+注：linctl v2 已移除"锚点注释"这一概念。所有 AST 注入完全基于 Go 语法结构（接口名、receiver 名、函数名）定位插入点，因此不再需要 `anchor/*` 类规则。
 
 | 类别 | 检查 ID | 说明 | `--fix` 行为 |
 | --- | --- | --- | --- |
 | 目录结构 | `dir/cmd-app` | `cmd/<app>/main.go` 存在 | ❌ 仅报错（创建空 main.go 风险大） |
 | 目录结构 | `dir/internal-app` | `internal/<app>/{handler,biz,store,model}` 存在 | ❌ 仅报错 |
-| 注册一致性 | `register/biz-impl` | 每个 `biz/v1/<resource>/` 都在 `biz.go` 出现（warning） | ⚠️ MVP 仅报告，提示运行 `lin add` |
+| 注册一致性 | `register/biz-impl` | 每个 `biz/v1/<resource>/` 都在 `biz.go` 出现（warning） | ⚠️ MVP 仅报告，提示运行 `linctl add` |
 | 注册一致性 | `register/store-impl` | 每个 `store/<resource>.go` 都在 `store.go` 出现（warning） | ⚠️ 同上 |
 | 占位文件 | `lin/post-protoc-placeholder` | 提示 `_lin.go` 占位文件需 `make protoc` 后清理（info） | ❌ 不报错 |
 | 路径安全 | `safety/path-traversal` | 资源路径未跳出项目根（`fsx.SafeJoin` 校验） | ❌ 报错 |
@@ -482,15 +493,15 @@ Flags:
 当前 `--fix` 仅作为占位 flag 保留，未真正执行修复操作。如发现 `register/*` 报告资源未注册，请直接运行：
 
 ```
-lin add <Resource>
+linctl add <Resource>
 ```
 
-由于 AST 注入完全是幂等的（已存在的方法/语句会被跳过），重新运行 `lin add` 即可恢复一致性。
+由于 AST 注入完全是幂等的（已存在的方法/语句会被跳过），重新运行 `linctl add` 即可恢复一致性。
 
 ### 5.4 输出示例
 
 ```
-$ lin lint
+$ linctl lint
 ✔ dir/cmd-app          cmd/myblog/main.go exists
 ✔ dir/internal-app     internal/myblog/{handler,biz,store,model} all exist
 ✔ register/biz-impl    biz.go: registration consistent
@@ -523,21 +534,21 @@ $ lin lint
 
 ---
 
-## 6. `lin doctor` — 校验本地工具链与运行环境
+## 6. `linctl doctor` — 校验本地工具链与运行环境
 
 ### 6.1 概述
 
 | 项目 | 说明 |
 | --- | --- |
 | **作用** | 检测开发环境中 lin 所依赖的工具是否可用、版本是否兼容 |
-| **触发** | 任意目录执行 `lin doctor` |
+| **触发** | 任意目录执行 `linctl doctor` |
 | **副作用** | 只读 |
 | **网络** | 默认不访问网络；`go env` 子调用可能间接触发 module proxy |
 
 ### 6.2 完整 usage
 
 ```
-lin doctor [flags]
+linctl doctor [flags]
 
 Flags:
       --report-format string text|json (default "text")
@@ -574,7 +585,7 @@ Flags:
 ### 6.4 输出示例
 
 ```
-$ lin doctor
+$ linctl doctor
 ✔ go            1.22.3
 ✔ git           2.42.0
 ✔ protoc        3.21.12
@@ -594,20 +605,20 @@ $ lin doctor
 
 ---
 
-## 7. `lin version` — 版本信息
+## 7. `linctl version` — 版本信息
 
 ### 7.1 概述
 
 | 项目 | 说明 |
 | --- | --- |
 | **作用** | 打印 lin 二进制的版本、commit、构建时间 |
-| **触发** | `lin version` 或 `lin -v` |
+| **触发** | `linctl version` 或 `linctl -v` |
 | **数据来源** | `internal/version/version.go` 由 ldflags 注入 |
 
 ### 7.2 完整 usage
 
 ```
-lin version [flags]
+linctl version [flags]
 
 Flags:
       --short                 Print only semver (e.g. "2.0.0-rc1")
@@ -617,8 +628,8 @@ Flags:
 ### 7.3 输出示例
 
 ```
-$ lin version
-lin version 2.0.0-rc1
+$ linctl version
+linctl version 2.0.0-rc1
   commit:   3f2e0b1
   built:    2026-04-29T11:22:33Z
   go:       go1.22.3
@@ -626,12 +637,12 @@ lin version 2.0.0-rc1
 ```
 
 ```
-$ lin version --short
+$ linctl version --short
 2.0.0-rc1
 ```
 
 ```
-$ lin version --format json
+$ linctl version --format json
 {"version":"2.0.0-rc1","commit":"3f2e0b1","built":"2026-04-29T11:22:33Z","go":"go1.22.3","os":"darwin","arch":"arm64"}
 ```
 
@@ -643,20 +654,20 @@ $ lin version --format json
 
 ---
 
-## 8. `lin completion` — Shell 补全
+## 8. `linctl completion` — Shell 补全
 
 ### 8.1 概述
 
 | 项目 | 说明 |
 | --- | --- |
 | **作用** | 生成 bash/zsh/fish/powershell 的命令补全脚本 |
-| **触发** | `lin completion <shell>`（重定向到 shell 配置文件） |
+| **触发** | `linctl completion <shell>`（重定向到 shell 配置文件） |
 | **来源** | 由 `cobra` 自动生成；lin 仅注册子命令 |
 
 ### 8.2 完整 usage
 
 ```
-lin completion <shell>
+linctl completion <shell>
 
 Args:
   <shell>   bash | zsh | fish | powershell
@@ -669,16 +680,16 @@ Flags:
 
 ```bash
 # bash (per-user)
-$ lin completion bash > ~/.local/share/bash-completion/completions/lin
+$ linctl completion bash > ~/.local/share/bash-completion/completions/linctl
 
 # zsh
-$ lin completion zsh > "${fpath[1]}/_lin"
+$ linctl completion zsh > "${fpath[1]}/_linctl"
 
 # fish
-$ lin completion fish > ~/.config/fish/completions/lin.fish
+$ linctl completion fish > ~/.config/fish/completions/linctl.fish
 
 # PowerShell
-PS> lin completion powershell | Out-String | Invoke-Expression
+PS> linctl completion powershell | Out-String | Invoke-Expression
 ```
 
 ### 8.4 退出码
@@ -701,10 +712,10 @@ PS> lin completion powershell | Out-String | Invoke-Expression
 | `0` | 成功 |
 | `1` | 通用未知错误 |
 | `2` | 参数错误（cobra） |
-| `10–19` | `lin new` 错误（详见 §3.6） |
-| `20–29` | `lin add` 错误（详见 §4.8） |
-| `30–34` | `lin lint` 错误（详见 §5.5） |
-| `35–39` | `lin doctor` 错误（详见 §6.5） |
+| `10–19` | `linctl new` 错误（详见 §3.6） |
+| `20–29` | `linctl add` 错误（详见 §4.8） |
+| `30–34` | `linctl lint` 错误（详见 §5.5） |
+| `35–39` | `linctl doctor` 错误（详见 §6.5） |
 | `40–49` | 预留：模板加载/渲染层（被 §3/§4 透传） |
 | `50–59` | 预留：AST 注入层（被 `add` 透传） |
 | `130` | 用户 Ctrl+C（标准 SIGINT 约定） |
@@ -924,7 +935,7 @@ func main() {
 
 ## 12. 设计取舍（FAQ）
 
-### Q1：为什么不提供 `lin remove <Resource>` 删除资源？
+### Q1：为什么不提供 `linctl remove <Resource>` 删除资源？
 
 A：MVP 范围内不做，原因：
 - 删除业务代码涉及大量人工判断（数据迁移、引用清理），工具难以替用户兜底；
@@ -938,14 +949,14 @@ A：副作用最小化原则。
 - 不同项目可能有不同的 Makefile 目标；
 - 工具退出舞台、把项目交还给开发者（[00 §3.1](./00-refactor-rationale.md)）。
 
-### Q3：`lin lint` 与 `golangci-lint` 是什么关系？
+### Q3：`linctl lint` 与 `golangci-lint` 是什么关系？
 
 A：完全不重叠。
-- `lin lint` 仅校验 lin 自己关心的规范（目录布局、AST 锚点、注册一致性）；
+- `linctl lint` 仅校验 lin 自己关心的规范（目录布局、AST 锚点、注册一致性）；
 - `golangci-lint` 校验 Go 语法/语义；
 - 两者建议都跑，互补。
 
-### Q4：为什么不引入 `lin update-templates` 或 `lin upgrade`？
+### Q4：为什么不引入 `linctl update-templates` 或 `linctl upgrade`？
 
 A：见 [00 §3.4「不是什么」](./00-refactor-rationale.md#34-不是什么non-goals明确边界)。
 - 模板升级时已有项目不会被自动改动；

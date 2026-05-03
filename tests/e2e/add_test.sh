@@ -1,11 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
-LIN_BIN=${LIN_BIN:-$PWD/_output/lin}
-[ -x "$LIN_BIN" ] || go build -o "$LIN_BIN" ./cmd/lin
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$REPO_ROOT"
+
+LIN_BIN=${LIN_BIN:-"$REPO_ROOT/_output/bin/linctl"}
+case "$LIN_BIN" in /*) ;; *) LIN_BIN="$REPO_ROOT/$LIN_BIN" ;; esac
+
+if [ ! -x "$LIN_BIN" ]; then
+    mkdir -p "$(dirname "$LIN_BIN")"
+    go build -o "$LIN_BIN" ./cmd/linctl
+fi
+LIN_BIN="$(cd "$(dirname "$LIN_BIN")" && pwd)/$(basename "$LIN_BIN")"
 
 TMPDIR=$(mktemp -d -t lin-add-XXXXXX)
 trap "rm -rf $TMPDIR" EXIT
+
+E2E_COMMON="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
+# shellcheck source=/dev/null
+source "$E2E_COMMON"
+
 cd "$TMPDIR"
+lin_e2e_link_linhub_replace "$TMPDIR" "$REPO_ROOT"
 
 echo "==> bootstrap project ..."
 "$LIN_BIN" new myblog \
@@ -16,7 +32,7 @@ echo "==> bootstrap project ..."
     --non-interactive
 cd myblog
 
-echo "==> lin add Post ..."
+echo "==> linctl add Post ..."
 "$LIN_BIN" add Post --yes --non-interactive
 
 echo "==> verify Post resource files (13) ..."

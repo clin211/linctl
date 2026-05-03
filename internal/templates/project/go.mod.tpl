@@ -3,10 +3,11 @@ module {{.Module}}
 go {{.GoVersion}}
 
 require (
+	github.com/clin211/linhub v0.0.1
 	github.com/gin-gonic/gin v1.10.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
-{{- if ne .Storage "memory"}}
+{{- if and (ne .Storage "memory") (ne .Storage "mongo")}}
 	gorm.io/gorm v1.25.12
 {{- end}}
 {{- if eq .Storage "gorm-postgres"}}
@@ -19,6 +20,17 @@ require (
 	gorm.io/driver/sqlite v1.5.7
 {{- end}}
 {{- if eq .Storage "mongo"}}
-	go.mongodb.org/mongo-driver/v2 v2.2.0
+	go.mongodb.org/mongo-driver v1.17.2
+{{- end}}
+{{- if eq .Cache "redis"}}
+	github.com/redis/go-redis/v9 v9.7.0
+{{- end}}
+{{- if eq .Cache "bigcache"}}
+	github.com/allegro/bigcache/v3 v3.1.0
 {{- end}}
 )
+
+// linhub provides shared backend utilities (core/log/errorsx/store/db/...).
+// During local development, point to the in-repo source.
+// Once linhub is published to a Git tag, you can delete this replace.
+replace github.com/clin211/linhub => ../linhub

@@ -6,7 +6,7 @@
 package main
 
 import (
-{{- if eq .Storage "memory"}}
+{{- if or (eq .Storage "memory") (eq .Storage "mongo")}}
 	"fmt"
 {{- else}}
 	"log"
@@ -17,13 +17,13 @@ import (
 )
 
 func main() {
-{{- if eq .Storage "memory"}}
-	fmt.Println("gen-gorm-model: memory storage does not require model generation.")
+{{- if or (eq .Storage "memory") (eq .Storage "mongo")}}
+	fmt.Println("gen-gorm-model: skipped for this storage backend.")
 {{- else}}
 	generate()
 {{- end}}
 }
-{{- if ne .Storage "memory"}}
+{{- if and (ne .Storage "memory") (ne .Storage "mongo")}}
 
 func generate() {
 	absPath, err := filepath.Abs("../../internal/{{.AppName}}/model")

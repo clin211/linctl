@@ -40,14 +40,14 @@ Phase 1  Phase 2     Phase 3      Phase 4         Phase 5
 | 1.2 | 新建 `internal/scaffold/` 包 + `Context`/`Plan` 类型 | scaffold/context.go, plan.go |
 | 1.3 | 新建 `internal/pkg/{tpl,fsx,logx,errs}` 基础库（沿用现有 `linctlerr`/`fs` 内核） | pkg/* |
 | 1.4 | 新建 `internal/cli/root.go`（cobra 根命令 + 全局 flag） | cli/root.go |
-| 1.5 | 新建 `cmd/lin/main.go`（替换 `cmd/linctl/main.go`） | cmd/lin/main.go |
+| 1.5 | 新建 `cmd/linctl/main.go`（v2 可执行文件 **linctl**） | cmd/linctl/main.go |
 | 1.6 | 引入 `dave/dst`、`bufbuild/protocompile`、`iancoleman/strcase`、`jinzhu/inflection` | go.mod |
 
-**Phase 1 完成后**：`lin --help` 可以打印（即使啥都不能干）。
+**Phase 1 完成后**：`linctl --help` 可以打印（即使啥都不能干）。
 
 ---
 
-### Phase 2：`lin new` 命令（4 天）
+### Phase 2：`linctl new` 命令（4 天）
 
 **目标**：完成项目骨架生成端到端流程。
 
@@ -61,19 +61,19 @@ Phase 1  Phase 2     Phase 3      Phase 4         Phase 5
 | 2.4 | 实现 `pkg/tpl/loader.go`：embed + 外部目录覆盖 | pkg/tpl/loader.go |
 | 2.5 | 实现 `cli/new.go`：解析 flag + 调用 scaffold | cli/new.go |
 | 2.6 | 在 `internal/templates/project/` 中确保**初始 `biz.go`/`store.go`/`register.go` 包含锚点注释**（详见 [05 §4](./05-registration-strategy.md)） | templates/project/internal/app/biz/biz.go.tpl 等 |
-| 2.7 | E2E 测试：`lin new` 生成项目可 `go build` | tests/e2e/new_test.sh |
+| 2.7 | E2E 测试：`linctl new` 生成项目可 `go build` | tests/e2e/new_test.sh |
 
 **Phase 2 完成标准**：
 
 ```bash
-lin new myblog --module github.com/test/myblog
+linctl new myblog --module github.com/test/myblog
 cd myblog && go mod tidy && go build ./...
 # 必须通过
 ```
 
 ---
 
-### Phase 3：`lin add` 命令 + AST 注入（5 天）
+### Phase 3：`linctl add` 命令 + AST 注入（5 天）
 
 **目标**：完成增量资源添加 + AST 注入。
 
@@ -95,9 +95,9 @@ cd myblog && go mod tidy && go build ./...
 **Phase 3 完成标准**：
 
 ```bash
-lin new myblog --module github.com/test/myblog
+linctl new myblog --module github.com/test/myblog
 cd myblog
-lin add Post Comment
+linctl add Post Comment
 go mod tidy && go build ./...
 
 # 检查注入完整性
@@ -107,12 +107,12 @@ grep -q 'import "post.proto";' pkg/api/myblog/v1/myblog.proto
 grep -q "RegisterErrors(PostErrors()...)" internal/pkg/errno/register.go
 
 # 幂等
-lin add Post   # 期望：⊝ skipped 全部
+linctl add Post   # 期望：⊝ skipped 全部
 ```
 
 ---
 
-### Phase 4：`lin lint` + `lin doctor`（2 天）
+### Phase 4：`linctl lint` + `linctl doctor`（2 天）
 
 **目标**：完成辅助命令。
 
@@ -139,7 +139,7 @@ lin add Post   # 期望：⊝ skipped 全部
 | --- | --- | --- |
 | 5.1 | 删除/归档旧模块（详见 [§3 删除清单](#3-删除清单)） | 大批文件 |
 | 5.2 | 更新 `lin/README.md` | README.md |
-| 5.3 | 更新 `lin/Makefile`（删除 `linctl`、改为 `lin`） | Makefile |
+| 5.3 | 更新 `lin/Makefile`：`APP=linctl`，构建产物 `_output/bin/linctl` | Makefile |
 | 5.4 | 归档 `lin/docs/` 旧版主线文档到 `lin/docs/legacy/` | docs/ |
 | 5.5 | 在 `lin/docs/features/README.md` 标记所有文档为 Stable | docs/features/README.md |
 | 5.6 | 修订 `CONTRIBUTING.md` | CONTRIBUTING.md |
@@ -180,7 +180,7 @@ lin add Post   # 期望：⊝ skipped 全部
 | --- | --- |
 | `internal/version/` | 保留 |
 | `internal/linctlerr/` | 重命名为 `internal/pkg/errs/`，逻辑不变 |
-| `cmd/linctl/` | 重命名为 `cmd/lin/`，main.go 简化 |
+| `cmd/linctl/` | v2 正式入口；可执行文件名为 **linctl** |
 | `tests/` | 保留并扩展 |
 | `tools/` | 保留 |
 
@@ -226,9 +226,9 @@ lin add Post   # 期望：⊝ skipped 全部
 
 | 里程碑 | 交付物 | 验收 |
 | --- | --- | --- |
-| **M1：Phase 1 完成** | 分支建立 + 骨架代码 | `lin --help` 输出预期命令 |
-| **M2：Phase 2 完成** | `lin new` 可用 | E2E 通过 |
-| **M3：Phase 3 完成** | `lin add` + AST 注入可用 | E2E 通过（含幂等） |
+| **M1：Phase 1 完成** | 分支建立 + 骨架代码 | `linctl --help` 输出预期命令 |
+| **M2：Phase 2 完成** | `linctl new` 可用 | E2E 通过 |
+| **M3：Phase 3 完成** | `linctl add` + AST 注入可用 | E2E 通过（含幂等） |
 | **M4：Phase 4 完成** | lint/doctor/version/completion 全套 | E2E 全绿 |
 | **M5：v2.0.0-rc1 发布** | 删除清单全部生效 + 文档归档 | tag 可下载，新人按 README 30 分钟出 demo |
 
@@ -239,7 +239,7 @@ lin add Post   # 期望：⊝ skipped 全部
 模板的核心来源是 miniblog-v4，重构期间应：
 
 1. **严格 mirror**：每次模板改动应能在 miniblog-v4 找到对应风格。
-2. **diff 验证**：Phase 2 完成后，用 `lin new` 生成的项目应**能与 miniblog-v4 等价**（除业务逻辑外）。
+2. **diff 验证**：Phase 2 完成后，用 `linctl new` 生成的项目应**能与 miniblog-v4 等价**（除业务逻辑外）。
 3. **回流改动**：若发现 miniblog-v4 有需要改进的地方（如更清晰的注释），先在 miniblog-v4 改，再回流到 lin 模板。
 
 ---
@@ -249,8 +249,8 @@ lin add Post   # 期望：⊝ skipped 全部
 | Phase | 估计工作量 | 关键里程碑 |
 | --- | --- | --- |
 | Phase 1 | 3d | 骨架可启动 |
-| Phase 2 | 4d | `lin new` 可用 |
-| Phase 3 | 5d | `lin add` 可用 |
+| Phase 2 | 4d | `linctl new` 可用 |
+| Phase 3 | 5d | `linctl add` 可用 |
 | Phase 4 | 2d | lint/doctor 可用 |
 | Phase 5 | 3d | 旧版归档 + v2 发布 |
 | **小计** | **17d**（约 3-4 个工作周） | v2.0.0-rc1 |
@@ -283,7 +283,7 @@ go list -m all | tail -n +2 | head -20 | wc -l
 # 期望: ≤ 8 个
 
 # 5) 二进制大小
-go build -ldflags "-s -w" -o /tmp/lin ./cmd/lin
+go build -ldflags "-s -w" -o /tmp/linctl ./cmd/linctl
 ls -lh /tmp/lin
 # 期望: ≤ 6 MB
 ```
@@ -296,7 +296,7 @@ ls -lh /tmp/lin
 | --- | --- |
 | v2.0 发布后 1 个月 | 收集用户反馈，调整模板细节 |
 | v2.0 发布后 3 个月 | 评估是否需要支持 grpc 框架（当前仅 gin） |
-| v2.0 发布后 6 个月 | 评估是否需要 `lin upgrade-templates`（让旧项目跟进模板修复） |
+| v2.0 发布后 6 个月 | 评估是否需要 `linctl upgrade-templates`（让旧项目跟进模板修复） |
 | v2.0 发布后 1 年 | 评估是否需要回流"演进闭环"（v3 可能） |
 
 > **核心原则**：演进基于真实使用反馈，**不为了"全能"而提前抽象**。
@@ -305,14 +305,14 @@ ls -lh /tmp/lin
 
 ## 11. SemVer 版本承诺
 
-`lin` 严格遵循 [SemVer 2.0](https://semver.org)，且赋予 lin 特定语义：
+`linctl`（lin 仓库发布之 CLI）严格遵循 [SemVer 2.0](https://semver.org)，且赋予其发布版本以下语义：
 
 ### 11.1 版本号 → 变更范围映射
 
 | 字段 | 含义 | 影响 | 示例 |
 | --- | --- | --- | --- |
-| `MAJOR`（v2 → v3） | **不兼容**变更 | 命令名/flag/退出码/锚点格式/模板布局 | 删除 `lin add`；锚点格式改为 `// lin>>` |
-| `MINOR`（v2.0 → v2.1） | **向后兼容的功能增强** | 新命令、新 flag、新可选层级 | 增加 `lin add --with grpc`；新 mutator |
+| `MAJOR`（v2 → v3） | **不兼容**变更 | 命令名/flag/退出码/锚点格式/模板布局 | 删除 `linctl add`；锚点格式改为 `// lin>>` |
+| `MINOR`（v2.0 → v2.1） | **向后兼容的功能增强** | 新命令、新 flag、新可选层级 | 增加 `linctl add --with grpc`；新 mutator |
 | `PATCH`（v2.0.0 → v2.0.1） | **向后兼容的 bug 修复** | 修 bug、改优化、不影响生成结果 | 修 AST 边界 bug；改善错误信息 |
 
 ### 11.2 模板内容变化的 SemVer 语义
@@ -324,16 +324,16 @@ ls -lh /tmp/lin
 | 修 bug（错误注释、typo） | 已生成项目不影响 | PATCH |
 | 给现有变量增加 funcMap 函数 | 已生成项目不影响（新模板才用） | PATCH |
 | 给模板增加新可选 feature 分支 | 已生成项目不影响 | MINOR |
-| **改 biz.go.tpl 默认结构**（如 `biz` 改为 `Biz`） | 老项目重跑 `lin add` 仍可用 | MINOR |
+| **改 biz.go.tpl 默认结构**（如 `biz` 改为 `Biz`） | 老项目重跑 `linctl add` 仍可用 | MINOR |
 | **删除某个 feature**（如废弃 `--features=user`） | 既有项目用 `--features=user` 会失败 | MAJOR |
-| **锚点注释格式变化** | 既有项目无法 `lin add` 直到迁移 | MAJOR |
+| **锚点注释格式变化** | 既有项目无法 `linctl add` 直到迁移 | MAJOR |
 
 ### 11.3 已生成项目的兼容性承诺
 
 | 维度 | 承诺 |
 | --- | --- |
-| **PATCH 升级** | 既有项目 `lin add` **完全无感**（仅修 bug） |
-| **MINOR 升级** | 既有项目 `lin add` **不破坏既有代码**；可能在新生成的资源中体现新风格（不强制替换老资源） |
+| **PATCH 升级** | 既有项目 `linctl add` **完全无感**（仅修 bug） |
+| **MINOR 升级** | 既有项目 `linctl add` **不破坏既有代码**；可能在新生成的资源中体现新风格（不强制替换老资源） |
 | **MAJOR 升级** | 不保证向后兼容；提供独立 [迁移指南](#114-跨-major-迁移指南)；旧 MAJOR 分支按 §11.5 定义获得维护 |
 
 ### 11.4 跨 MAJOR 迁移指南
@@ -341,15 +341,15 @@ ls -lh /tmp/lin
 每个 MAJOR 发布伴随：
 
 1. **`docs/migration-vN-to-vN+1.md`** 文档
-2. **`lin lint --migrate-from vN`** 子命令（Phase 2+ 评估）
+2. **`linctl lint --migrate-from vN`** 子命令（Phase 2+ 评估）
 3. **CHANGELOG 中的破坏性变更清单**
 
 ### 11.5 v1.x → v2.0 的关系
 
-| v1.x（当前主线 lin） | v2.0（本次重构） |
+| v1.x（历史 plan/apply 主线） | v2.0（本次重构，`cmd/linctl`） |
 | --- | --- |
 | 10,525 行 / 14 模块 / 15+ 命令 | 3,160 行 / 5–7 模块 / 6 命令 |
-| `linctl` 二进制名 | `lin` 二进制名 |
+| 可执行文件多为 **`linctl`** | 可执行文件为 **`linctl`**（命令集与 flag 已变） |
 | 有 plan/apply/templatesync/feature | 全部删除 |
 
 **v1 用户的迁移路径**：
@@ -357,7 +357,7 @@ ls -lh /tmp/lin
 | 场景 | 推荐 |
 | --- | --- |
 | 已用 v1 生成项目，不想升级 | 保留使用 v1 二进制；详见下方维护承诺 |
-| 已用 v1 生成项目，想用 v2 | 用 v2 重新 `lin new` 一个空项目 → 手工迁移业务逻辑 |
+| 已用 v1 生成项目，想用 v2 | 用 v2 重新 `linctl new` 一个空项目 → 手工迁移业务逻辑 |
 | 新项目 | 直接用 v2 |
 
 > **关键**：**不提供** v1 → v2 的自动迁移工具。两者哲学差异过大，自动迁移成本远超手工。
@@ -409,7 +409,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: '${{ matrix.go }}' }
-      - run: go build -ldflags "-s -w" -o lin ./cmd/lin
+      - run: go build -ldflags "-s -w" -o linctl ./cmd/linctl
       - run: go test ./...
       - run: go vet ./...
 
@@ -420,7 +420,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: '1.22' }
-      - run: go build -o lin ./cmd/lin
+      - run: go build -o linctl ./cmd/linctl
       - run: bash tests/e2e/new_test.sh
       - run: bash tests/e2e/add_test.sh
       - run: bash tests/e2e/add_idempotent_test.sh
@@ -433,17 +433,17 @@ jobs:
         with: { go-version: '1.22' }
       - name: Build & check size
         run: |
-          go build -ldflags "-s -w" -o lin ./cmd/lin
-          size=$(stat -c %s lin)
+          go build -ldflags "-s -w" -o linctl ./cmd/linctl
+          size=$(stat -c %s linctl)
           max=$((6 * 1024 * 1024))   # 6 MB
           if [ "$size" -gt "$max" ]; then
-            echo "::error::lin binary $size bytes exceeds 6MB budget"
+            echo "::error::linctl binary $size bytes exceeds 6MB budget"
             exit 1
           fi
-          echo "::notice::lin binary size: $((size / 1024)) KB"
+          echo "::notice::linctl binary size: $((size / 1024)) KB"
 ```
 
-### 12.2 用户项目 CI 示例（用 `lin lint`）
+### 12.2 用户项目 CI 示例（用 `linctl lint`）
 
 ```yaml
 # <user-project>/.github/workflows/lin-check.yml
@@ -455,16 +455,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install lin
+      - name: Install linctl
         run: |
-          curl -sSL https://github.com/<org>/lin/releases/latest/download/lin-linux-amd64 \
-            -o /usr/local/bin/lin
-          chmod +x /usr/local/bin/lin
-          lin version
-      - name: lin doctor (offline)
-        run: lin doctor --offline --report-format json > doctor.json
-      - name: lin lint
-        run: lin lint --report-format json > lint.json
+          curl -sSL https://github.com/<org>/lin/releases/latest/download/linctl-linux-amd64 \
+            -o /usr/local/bin/linctl
+          chmod +x /usr/local/bin/linctl
+          linctl version
+      - name: linctl doctor (offline)
+        run: linctl doctor --offline --report-format json > doctor.json
+      - name: linctl lint
+        run: linctl lint --report-format json > lint.json
       - name: Annotate PR
         if: failure()
         uses: actions/github-script@v7
@@ -490,10 +490,10 @@ lin-check:
   stage: check
   image: golang:1.22-alpine
   script:
-    - wget -O /usr/local/bin/lin https://gitlab.com/<org>/lin/-/releases/permalink/latest/downloads/lin-linux-amd64
-    - chmod +x /usr/local/bin/lin
-    - lin doctor --offline
-    - lin lint --report-format json | tee lint.json
+    - wget -O /usr/local/bin/linctl https://gitlab.com/<org>/lin/-/releases/permalink/latest/downloads/linctl-linux-amd64
+    - chmod +x /usr/local/bin/linctl
+    - linctl doctor --offline
+    - linctl lint --report-format json | tee lint.json
   artifacts:
     when: always
     paths: [lint.json]
@@ -505,10 +505,10 @@ lin-check:
 
 | 规则 | 实现 |
 | --- | --- |
-| CI 中 `lin` 命令必须**非交互** | 自动检测非 TTY；或显式 `--non-interactive` |
-| `lin doctor` 在内网 / airgap | 用 `--offline` 跳过网络检查（详见 [02 §6.2.1](./02-command-set.md#621---offline-行为)） |
+| CI 中 `linctl` 命令必须**非交互** | 自动检测非 TTY；或显式 `--non-interactive` |
+| `linctl doctor` 在内网 / airgap | 用 `--offline` 跳过网络检查（详见 [02 §6.2.1](./02-command-set.md#621---offline-行为)） |
 | 退出码为信号源 | CI 基于 `exit_code` 判断；JSON 报告作为补充 |
-| 锁定 lin 版本 | 项目 `Makefile` 中固化 `LIN_VERSION := 2.0.0`，下载时校验 |
+| 锁定 linctl 版本 | 项目 `Makefile` 中固化 `LINCTL_VERSION := 2.0.0`，下载时校验 |
 
 ---
 

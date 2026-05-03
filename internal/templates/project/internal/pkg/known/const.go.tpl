@@ -1,10 +1,14 @@
 // Package known defines well-known constants for {{.AppName | Title}}.
+//
+// Prefer github.com/clin211/linhub/errx for standard HTTP header names used across linhub/core.
 package known
 
-// HTTP header constants (lowercase for HTTP/2 and gRPC compatibility).
+import "github.com/clin211/linhub/errx"
+
+// HTTP header constants (aligned with linhub errx / core).
 const (
 	// XRequestID is the header name for the unique request ID.
-	XRequestID = "x-request-id"
+	XRequestID = errx.HeaderRequestID
 
 	// XUserID is the header name for the authenticated user ID.
 	XUserID = "x-user-id"

@@ -1,9 +1,9 @@
-# lin v2
+# linctl v2
 
 [![CI](https://github.com/clin211/lin/actions/workflows/ci.yml/badge.svg)](https://github.com/clin211/lin/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/clin211/lin.svg)](https://pkg.go.dev/github.com/clin211/lin)
 
-> **lin** — 零摩擦、幂等友好的 Go 后端脚手架工具。两条命令，一次生成，重跑安全。
+> **linctl** — 零摩擦、幂等友好的 Go 后端脚手架工具。两条命令，一次生成，重跑安全。（Go module：`github.com/clin211/lin`）
 
 ---
 
@@ -11,9 +11,9 @@
 
 | 特性 | 说明 |
 |------|------|
-| **零摩擦上手** | `lin new` 生成完整 miniblog-v4 骨架，无需手写样板代码 |
-| **幂等重跑** | `lin add` 重复执行不会破坏既有代码（AST 注入基于锚点，跳过已有内容） |
-| **自我诊断** | `lin lint` 检查项目结构与 AST 完整性；`lin doctor` 检查工具链 |
+| **零摩擦上手** | `linctl new` 生成完整 miniblog-v4 骨架，无需手写样板代码 |
+| **幂等重跑** | `linctl add` 重复执行不会破坏既有代码（AST 注入基于锚点，跳过已有内容） |
+| **自我诊断** | `linctl lint` 检查项目结构与 AST 完整性；`linctl doctor` 检查工具链 |
 | **纯 Go** | 无外部依赖运行时；单二进制，嵌入所有模板 |
 
 ---
@@ -21,7 +21,7 @@
 ## 安装
 
 ```bash
-go install github.com/clin211/lin/cmd/lin@latest
+go install github.com/clin211/lin/cmd/linctl@latest
 ```
 
 或从源码构建：
@@ -29,7 +29,7 @@ go install github.com/clin211/lin/cmd/lin@latest
 ```bash
 git clone https://github.com/clin211/lin.git
 cd lin
-make build          # → _output/bin/lin
+make build          # → _output/bin/linctl
 ```
 
 ---
@@ -38,8 +38,12 @@ make build          # → _output/bin/lin
 
 ### 1. 生成项目骨架
 
+**交互式（终端内逐步问答，类似 Vite）：** 直接执行 `linctl new`（需在真实 TTY 中；管道/CI 请用下面的非交互方式）。
+
+**非交互 / CI：**
+
 ```bash
-lin new myblog \
+linctl new myblog \
   --module github.com/foo/myblog \
   --storage memory \
   --features healthz \
@@ -60,8 +64,8 @@ lin new myblog \
 
 ```bash
 cd myblog
-lin add Post          # 生成 14 个文件 + 4 处 AST 注入
-lin add Comment       # 再次添加；重跑幂等
+linctl add Post          # 生成 14 个文件 + 4 处 AST 注入
+linctl add Comment       # 再次添加；重跑幂等
 ```
 
 ```
@@ -77,9 +81,9 @@ lin add Comment       # 再次添加；重跑幂等
 ### 3. 校验项目健康
 
 ```bash
-lin lint              # 检查目录结构 + AST 锚点
-lin lint --fix        # 自动修复缺失的锚点注释
-lin doctor --offline  # 检查工具链（跳过网络检查）
+linctl lint              # 检查目录结构 + AST 锚点
+linctl lint --fix        # 自动修复缺失的锚点注释
+linctl doctor --offline  # 检查工具链（跳过网络检查）
 ```
 
 ---
@@ -88,12 +92,12 @@ lin doctor --offline  # 检查工具链（跳过网络检查）
 
 | 命令 | 说明 |
 |------|------|
-| `lin new <project>` | 生成新项目骨架（miniblog-v4 风格） |
-| `lin add <Resource>...` | 在已有项目中添加全栈业务资源 |
-| `lin lint [--fix]` | 校验项目结构与 AST 锚点完整性 |
-| `lin doctor [--offline]` | 检查本地工具链与运行环境 |
-| `lin version` | 打印版本信息 |
-| `lin completion <shell>` | 生成 shell 补全脚本（bash/zsh/fish/powershell） |
+| `linctl new <project>` | 生成新项目骨架（miniblog-v4 风格） |
+| `linctl add <Resource>...` | 在已有项目中添加全栈业务资源 |
+| `linctl lint [--fix]` | 校验项目结构与 AST 锚点完整性 |
+| `linctl doctor [--offline]` | 检查本地工具链与运行环境 |
+| `linctl version` | 打印版本信息 |
+| `linctl completion <shell>` | 生成 shell 补全脚本（bash/zsh/fish/powershell） |
 
 全局 flag：`--log-level` / `--log-format` / `-C, --chdir` / `--no-color` / `--non-interactive` / `-y, --yes`
 
@@ -118,17 +122,15 @@ myblog/
 
 ## v1 → v2 迁移
 
-lin v2 重构了命令集，不再支持 v1 的 `plan/apply` 范式。
+v2 重构了命令集，不再支持 v1 的 `plan`/`apply` 范式；**v2 的可执行文件名为 `linctl`**（入口 `cmd/linctl`）。
 
 | v1 命令 | v2 对应 | 说明 |
 |---------|---------|------|
-| `linctl plan` | `lin add --dry-run` | 预览生成计划 |
-| `linctl apply` | `lin add` | 执行生成 |
-| `linctl new` | `lin new` | 生成项目骨架 |
-| — | `lin lint` | v2 新增：AST 完整性检查 |
-| — | `lin doctor` | v2 新增：工具链检查 |
-
-v1 二进制（`cmd/linctl/`）在当前 repo 中已弃用，将在 v3 移除。
+| `linctl plan` | `linctl add --dry-run` | 预览生成计划 |
+| `linctl apply` | `linctl add` | 执行生成 |
+| `linctl new` | `linctl new` | 生成项目骨架 |
+| — | `linctl lint` | v2：AST 完整性检查 |
+| — | `linctl doctor` | v2：工具链检查 |
 
 详细迁移指引见 [docs/features/06-migration-plan.md](./docs/features/06-migration-plan.md)。
 

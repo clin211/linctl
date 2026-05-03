@@ -1,4 +1,4 @@
-// Package version 集中管理 lin 的版本元数据。
+// Package version 集中管理 linctl 的版本元数据。
 //
 // 这些变量由 -ldflags 注入：
 //
@@ -23,7 +23,7 @@ var (
 	BuildDate = "unknown"
 )
 
-// Info 是结构化版本信息，用于 `lin version --format json/yaml`。
+// Info 是结构化版本信息，用于 `linctl version --format json/yaml`。
 type Info struct {
 	Version    string `json:"version" yaml:"version"`
 	Commit     string `json:"commit" yaml:"commit"`
@@ -35,7 +35,7 @@ type Info struct {
 	BuildFlags string `json:"buildFlags,omitempty" yaml:"buildFlags,omitempty"`
 }
 
-// Get 返回当前 lin 二进制的版本信息。
+// Get 返回当前 linctl 二进制的版本信息。
 func Get() Info {
 	info := Info{
 		Version:   Version,
@@ -74,7 +74,7 @@ func (i Info) String() string {
 	if i.Modified {
 		mod = " (modified)"
 	}
-	return fmt.Sprintf("lin %s (%s%s) built %s with %s on %s/%s",
+	return fmt.Sprintf("linctl %s (%s%s) built %s with %s on %s/%s",
 		i.Version, i.Commit, mod, i.BuildDate, i.GoVersion, i.OS, i.Arch)
 }
 

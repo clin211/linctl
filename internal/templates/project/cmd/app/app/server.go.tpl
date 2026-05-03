@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,11 +14,20 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/clin211/linhub/log"
+
 	"{{.Module}}/internal/{{.AppName}}/biz"
 	"{{.Module}}/internal/{{.AppName}}/handler"
 	"{{.Module}}/internal/{{.AppName}}/store"
+	"{{.Module}}/internal/pkg/middleware"
 {{- if ne .Storage "memory"}}
-	"{{.Module}}/pkg/db"
+	dbpkg "{{.Module}}/pkg/db"
+{{- end}}
+{{- if eq .Cache "redis"}}
+	"{{.Module}}/pkg/cache"
+{{- end}}
+{{- if eq .Cache "bigcache"}}
+	"{{.Module}}/pkg/cache"
 {{- end}}
 )
 
@@ -58,18 +66,31 @@ func run(ctx context.Context) error {
 	// Initialize store
 {{- if eq .Storage "memory"}}
 	s := store.NewStore()
-{{- else}}
-	dbOpts := &db.PostgreSQLOptions{
-		Addr:     viper.GetString("postgresql.addr"),
-		Username: viper.GetString("postgresql.username"),
-		Password: viper.GetString("postgresql.password"),
-		Database: viper.GetString("postgresql.database"),
+{{- else if eq .Storage "mongo"}}
+	if err := dbpkg.InitMongo(); err != nil {
+		return fmt.Errorf("mongodb init: %w", err)
 	}
-	dbInstance, err := db.NewPostgreSQL(dbOpts)
+	defer func() { _ = dbpkg.CloseMongo() }()
+	// Domain store is in-memory; use dbpkg.MongoClient() for MongoDB until resources support it.
+	s := store.NewStore()
+{{- else}}
+	dbInstance, err := dbpkg.OpenGORM("{{.Storage}}")
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	s := store.NewStore(dbInstance)
+{{- end}}
+
+{{- if eq .Cache "redis"}}
+	if err := cache.InitRedis(); err != nil {
+		return fmt.Errorf("redis init: %w", err)
+	}
+	defer func() { _ = cache.CloseRedis() }()
+{{- else if eq .Cache "bigcache"}}
+	if err := cache.InitBigCache(); err != nil {
+		return fmt.Errorf("bigcache init: %w", err)
+	}
+	defer func() { _ = cache.CloseBigCache() }()
 {{- end}}
 
 	// Wire up dependencies
@@ -79,6 +100,7 @@ func run(ctx context.Context) error {
 	// Set up gin router
 	r := gin.New()
 	r.Use(gin.Recovery())
+	r.Use(middleware.RequestID())
 
 	v1 := r.Group("/v1")
 	h.InstallAll(v1)
@@ -93,9 +115,9 @@ func run(ctx context.Context) error {
 
 	// Start server in background
 	go func() {
-		slog.Info("Starting server", "addr", addr)
+		log.Infow("Starting server", "addr", addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("Server error", "error", err)
+			log.Errorw(err, "Server error")
 		}
 	}()
 
@@ -108,7 +130,7 @@ func run(ctx context.Context) error {
 	case <-quit:
 	}
 
-	slog.Info("Shutting down server...")
+	log.Infow("Shutting down server")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -116,7 +138,7 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("server forced to shutdown: %w", err)
 	}
 
-	slog.Info("Server exited successfully.")
+	log.Infow("Server exited successfully.")
 	return nil
 }
 
@@ -143,6 +165,6 @@ func initConfig() {
 	}
 	viper.AutomaticEnv()
 	if err := viper.ReadInConfig(); err != nil {
-		slog.Warn("Config file not found, using defaults", "error", err)
+		log.Warnw("Config file not found, using defaults", "error", err)
 	}
 }

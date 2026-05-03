@@ -11,7 +11,7 @@
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                         Entry Layer (cmd)                         │
-│                       cmd/lin/main.go (~50 行)                    │
+│                       cmd/linctl/main.go (~50 行)                 │
 └───────────────────────────────┬──────────────────────────────────┘
                                 │
 ┌───────────────────────────────▼──────────────────────────────────┐
@@ -52,18 +52,18 @@
 ```
 lin/
 ├── cmd/
-│   └── lin/
+│   └── linctl/
 │       └── main.go                 # 入口（≤50 行；signal/exit code）
 │
 ├── internal/
 │   ├── cli/                        # CLI 命令分发（cobra）
 │   │   ├── root.go                 # 根命令、全局 flag
-│   │   ├── new.go                  # lin new
-│   │   ├── add.go                  # lin add
-│   │   ├── lint.go                 # lin lint
-│   │   ├── doctor.go               # lin doctor
-│   │   ├── version.go              # lin version
-│   │   └── completion.go           # lin completion <shell>
+│   │   ├── new.go                  # linctl new
+│   │   ├── add.go                  # linctl add
+│   │   ├── lint.go                 # linctl lint
+│   │   ├── doctor.go               # linctl doctor
+│   │   ├── version.go              # linctl version
+│   │   └── completion.go           # linctl completion <shell>
 │   │
 │   ├── scaffold/                   # 骨架生成核心
 │   │   ├── context.go              # 项目上下文（module/appName 推断）
@@ -162,7 +162,7 @@ lin/
 | `pkg/logx/` | ~80 行 | 日志封装 |
 | `pkg/errs/` | ~200 行 | 错误码 |
 | `version/` | ~80 行 | 版本 |
-| `cmd/lin/` | ~50 行 | 入口 |
+| `cmd/linctl/` | ~50 行 | 入口 |
 | **小计（生产代码）** | **~3,160 行** | vs 当前 ~10,525 行（**-70%**） |
 | `templates/` | N/A | 模板内容不计入代码量 |
 
@@ -174,15 +174,15 @@ lin/
 
 | 模块 | 职责 | 不做的事 |
 | --- | --- | --- |
-| `cmd/lin/` | signal 处理、调用 `cli.Execute`、错误转退出码 | 任何业务逻辑 |
+| `cmd/linctl/` | signal 处理、调用 `cli.Execute`、错误转退出码 | 任何业务逻辑 |
 
 ### L1：CLI 层
 
 | 模块 | 职责 | 输入 | 输出 |
 | --- | --- | --- | --- |
 | `cli/root.go` | 注册根命令、全局 flag、初始化 logger | argv | cobra.Command |
-| `cli/new.go` | 解析 `lin new` 参数，调用 `scaffold.NewProject` | argv | error |
-| `cli/add.go` | 解析 `lin add` 参数，调用 `scaffold.AddResource` | argv | error |
+| `cli/new.go` | 解析 `linctl new` 参数，调用 `scaffold.NewProject` | argv | error |
+| `cli/add.go` | 解析 `linctl add` 参数，调用 `scaffold.AddResource` | argv | error |
 | `cli/lint.go` | 调用 `check.Lint` | argv | error |
 | `cli/doctor.go` | 调用 `check.Doctor` | argv | error |
 | `cli/version.go` | 打印版本 | argv | error |
@@ -224,7 +224,7 @@ lin/
 ## 4. 依赖方向（强约束）
 
 ```
-   cmd/lin
+   cmd/linctl
       ↓
    cli/    ────────────────────────────────────┐
       ↓                                          │
@@ -244,10 +244,10 @@ lin/
 
 ---
 
-## 5. 数据流：`lin new` 命令
+## 5. 数据流：`linctl new` 命令
 
 ```
-User: lin new myblog --module github.com/foo/myblog --storage gorm-postgres --features otel,healthz
+User: linctl new myblog --module github.com/foo/myblog --storage gorm-postgres --features otel,healthz
                                          │
                                          ▼
                 ┌─────────────────────────────────────────────┐
@@ -295,10 +295,10 @@ User: lin new myblog --module github.com/foo/myblog --storage gorm-postgres --fe
 
 ---
 
-## 6. 数据流：`lin add` 命令
+## 6. 数据流：`linctl add` 命令
 
 ```
-User: lin add Post   (在 myblog/ 目录下执行)
+User: linctl add Post   (在 myblog/ 目录下执行)
                         │
                         ▼
         ┌─────────────────────────────────────────────┐
@@ -454,28 +454,28 @@ func (l *Loader) Load(relPath string) (*template.Template, error)
 
 | miniblog-v4 路径 | 由谁生成 | 备注 |
 | --- | --- | --- |
-| `cmd/<app>/main.go` | `lin new` | 初次生成 |
-| `cmd/<app>/app/` | `lin new` | 初次生成 |
-| `cmd/gen-gorm-model/gen_gorm_model.go` | `lin new` | 数据库模型反推工具（详见 [03 §3.4.1](./03-resource-scaffold.md#341-推荐工作流搭配-cmdgen-gorm-model)） |
-| `pkg/db/postgres.go` / `pkg/db/mysql.go` | `lin new` | 数据库连接器（gen-gorm-model 与运行时复用） |
-| `internal/<app>/handler/<resource>.go` | `lin add` | 每个资源一份 |
-| `internal/<app>/biz/biz.go` | `lin new` 初始化 + `lin add` AST 注入 | 接口集合 |
-| `internal/<app>/biz/v1/<resource>/<resource>.go` | `lin add` | 业务逻辑 |
-| `internal/<app>/store/store.go` | `lin new` 初始化 + `lin add` AST 注入 | 接口集合 |
-| `internal/<app>/store/<resource>.go` | `lin add` | 持久化实现 |
-| `internal/<app>/model/<resource>.gen.go` | `lin add` | 数据模型（gorm gen） |
-| `internal/<app>/pkg/conversion/<resource>.go` | `lin add --with conversion` | DTO 转换 |
-| `internal/<app>/pkg/validation/<resource>.go` | `lin add --with validation` | 校验 |
-| `internal/pkg/errno/<resource>.go` | `lin add` | 业务错误 |
-| `internal/pkg/errno/register.go` | `lin new` 初始化 + `lin add` AST 注入 | 错误注册 |
-| `pkg/api/<app>/v1/<app>.proto` | `lin new` 初始化 + `lin add` AST 注入 | proto 定义 |
-| `pkg/api/<app>/v1/<resource>.proto` | `lin add --with proto` | 资源 proto（可选） |
-| `internal/pkg/middleware/` | `lin new` | 项目级中间件 |
-| `internal/pkg/contextx/` | `lin new` | 上下文工具 |
-| `internal/pkg/known/` | `lin new` | 常量定义 |
-| `internal/pkg/rid/` | `lin new` | ID 生成 |
-| `configs/<app>.yaml` | `lin new` | 单一应用配置（含 db section；gen-gorm-model 复用） |
-| `Makefile` / `Dockerfile` / `.golangci.yaml` | `lin new` | 工程化（Makefile 含 `gen-model` target，与 miniblog-v4 一致） |
+| `cmd/<app>/main.go` | `linctl new` | 初次生成 |
+| `cmd/<app>/app/` | `linctl new` | 初次生成 |
+| `cmd/gen-gorm-model/gen_gorm_model.go` | `linctl new` | 数据库模型反推工具（详见 [03 §3.4.1](./03-resource-scaffold.md#341-推荐工作流搭配-cmdgen-gorm-model)） |
+| `pkg/db/postgres.go` / `pkg/db/mysql.go` | `linctl new` | 数据库连接器（gen-gorm-model 与运行时复用） |
+| `internal/<app>/handler/<resource>.go` | `linctl add` | 每个资源一份 |
+| `internal/<app>/biz/biz.go` | `linctl new` 初始化 + `linctl add` AST 注入 | 接口集合 |
+| `internal/<app>/biz/v1/<resource>/<resource>.go` | `linctl add` | 业务逻辑 |
+| `internal/<app>/store/store.go` | `linctl new` 初始化 + `linctl add` AST 注入 | 接口集合 |
+| `internal/<app>/store/<resource>.go` | `linctl add` | 持久化实现 |
+| `internal/<app>/model/<resource>.gen.go` | `linctl add` | 数据模型（gorm gen） |
+| `internal/<app>/pkg/conversion/<resource>.go` | `linctl add --with conversion` | DTO 转换 |
+| `internal/<app>/pkg/validation/<resource>.go` | `linctl add --with validation` | 校验 |
+| `internal/pkg/errno/<resource>.go` | `linctl add` | 业务错误 |
+| `internal/pkg/errno/register.go` | `linctl new` 初始化 + `linctl add` AST 注入 | 错误注册 |
+| `pkg/api/<app>/v1/<app>.proto` | `linctl new` 初始化 + `linctl add` AST 注入 | proto 定义 |
+| `pkg/api/<app>/v1/<resource>.proto` | `linctl add --with proto` | 资源 proto（可选） |
+| `internal/pkg/middleware/` | `linctl new` | 项目级中间件 |
+| `internal/pkg/contextx/` | `linctl new` | 上下文工具 |
+| `internal/pkg/known/` | `linctl new` | 常量定义 |
+| `internal/pkg/rid/` | `linctl new` | ID 生成 |
+| `configs/<app>.yaml` | `linctl new` | 单一应用配置（含 db section；gen-gorm-model 复用） |
+| `Makefile` / `Dockerfile` / `.golangci.yaml` | `linctl new` | 工程化（Makefile 含 `gen-model` target，与 miniblog-v4 一致） |
 
 ---
 
@@ -483,9 +483,9 @@ func (l *Loader) Load(relPath string) (*template.Template, error)
 
 | 维度 | 目标 | 验证方式 |
 | --- | --- | --- |
-| 启动时间 | `lin --help` ≤ 50ms | E2E |
-| `lin new` 性能 | ≤ 1.5s（30-50 文件） | E2E |
-| `lin add` 性能 | ≤ 0.5s（8 文件 + 4 注入） | E2E |
+| 启动时间 | `linctl --help` ≤ 50ms | E2E |
+| `linctl new` 性能 | ≤ 1.5s（30-50 文件） | E2E |
+| `linctl add` 性能 | ≤ 0.5s（8 文件 + 4 注入） | E2E |
 | 二进制大小 | ≤ 6 MB（macOS arm64） | `go build && du -h` |
 | 直接依赖数 | ≤ 8 个 | `go list -m all \| wc -l` |
 | 单测覆盖率 | `scaffold` ≥ 80%、`ast` ≥ 90% | `go test -cover` |
@@ -498,7 +498,7 @@ func (l *Loader) Load(relPath string) (*template.Template, error)
 任何重构都必须保证：
 
 1. **生成的项目可直接 `go build`**（E2E 验证）。
-2. **`lin add X && lin add X` 是幂等的**（重复执行不破坏代码）。
+2. **`linctl add X && linctl add X` 是幂等的**（重复执行不破坏代码）。
 3. **AST 注入失败时，所有创建的文件全部回滚**（事务性）。
 4. **所有命令在 SIGINT 时干净退出**（不留半成品）。
 5. **模板内不允许出现作者本机路径**（包括 `os.Getenv("USER")`）。

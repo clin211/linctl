@@ -88,7 +88,7 @@ func checkGoVersion() Item {
 			Name:     "go",
 			Status:   "error",
 			Message:  fmt.Sprintf("go %s", goVer),
-			Hint:     "lin requires go >= 1.22; upgrade at https://go.dev/dl/",
+			Hint:     "linctl requires go >= 1.22; upgrade at https://go.dev/dl/",
 		}
 	}
 	return Item{Category: "go", Name: "go", Status: "ok", Message: goVer}
@@ -102,7 +102,7 @@ func checkGoFlags() Item {
 			Name:     "GOFLAGS",
 			Status:   "warning",
 			Message:  fmt.Sprintf("GOFLAGS=%s", goflags),
-			Hint:     "lin scaffold conflicts with -mod=vendor; unset or change GOFLAGS",
+			Hint:     "linctl scaffold conflicts with -mod=vendor; unset or change GOFLAGS",
 		}
 	}
 	return Item{Category: "go", Name: "GOFLAGS", Status: "ok", Message: "no -mod=vendor"}
@@ -138,7 +138,7 @@ func checkGitVersion() Item {
 			Name:     "git",
 			Status:   "warning",
 			Message:  verStr,
-			Hint:     "lin recommends git >= 2.30; upgrade at https://git-scm.com/",
+			Hint:     "linctl recommends git >= 2.30; upgrade at https://git-scm.com/",
 		}
 	}
 	return Item{Category: "git", Name: "git", Status: "ok", Message: verStr}
@@ -152,7 +152,7 @@ func checkProtoc() Item {
 			Name:     "protoc",
 			Status:   "warning",
 			Message:  "not found",
-			Hint:     "needed for `lin add --with proto`; install from https://github.com/protocolbuffers/protobuf/releases",
+			Hint:     "needed for `linctl add --with proto`; install from https://github.com/protocolbuffers/protobuf/releases",
 		}
 	}
 	out, _ := exec.Command("protoc", "--version").Output()

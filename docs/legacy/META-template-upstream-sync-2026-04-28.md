@@ -505,7 +505,7 @@ linctl internal templatesync check --quiet || {
 
 | 维度 | META-template-lifecycle | **META-template-upstream-sync（本文档）** |
 | --- | --- | --- |
-| 解决的问题 | 终端用户用 lin 生成项目后怎么升级 | lin 维护者怎么把 miniblog-v4 演进同步到 web-gin 模板 |
+| 解决的问题 | 终端用户用 **linctl** 生成项目后怎么升级 | lin 维护者怎么把 miniblog-v4 演进同步到 web-gin 模板 |
 | 使用者 | 终端开发者 | lin 仓库维护者 |
 | 触发频率 | 用户跑 `linctl sync` | 维护者每次 miniblog-v4 升级后跑 |
 | 命令前缀 | `linctl sync` / `linctl resolve` / `linctl status` | `linctl internal templatesync ...` |

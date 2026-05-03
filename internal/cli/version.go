@@ -31,7 +31,7 @@ func newVersionCmd(g *Globals) *cobra.Command {
 	)
 	cmd := &cobra.Command{
 		Use:   "version",
-		Short: "Print lin version information",
+		Short: "Print linctl version information",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			info := versionInfo{
 				Version:   version,
@@ -51,7 +51,7 @@ func newVersionCmd(g *Globals) *cobra.Command {
 			case "json":
 				return json.NewEncoder(cmd.OutOrStdout()).Encode(info)
 			default:
-				fmt.Fprintf(cmd.OutOrStdout(), "lin version %s\n", info.Version)
+				fmt.Fprintf(cmd.OutOrStdout(), "linctl version %s\n", info.Version)
 				fmt.Fprintf(cmd.OutOrStdout(), "  commit:   %s\n", info.Commit)
 				fmt.Fprintf(cmd.OutOrStdout(), "  built:    %s\n", info.Built)
 				fmt.Fprintf(cmd.OutOrStdout(), "  go:       %s\n", info.GoVersion)

@@ -2,13 +2,13 @@
 
 > **前置阅读**：[01-architecture-blueprint.md](./01-architecture-blueprint.md) §8
 >
-> 本文档定义 `lin add <Resource>` 命令生成的**全栈资源骨架**——文件清单、命名约定、模板预览、AST 注入点。
+> 本文档定义 `linctl add <Resource>` 命令生成的**全栈资源骨架**——文件清单、命名约定、模板预览、AST 注入点。
 
 ---
 
 ## 1. 资源分层总览
 
-以 `lin add Post` 在 `myblog/` 项目下生成为例：
+以 `linctl add Post` 在 `myblog/` 项目下生成为例：
 
 ```
 myblog/
@@ -17,13 +17,13 @@ myblog/
 ├── internal/
 │   ├── myblog/
 │   │   ├── handler/
-│   │   │   ├── handler.go                      # ← lin new 已创建
-│   │   │   ├── healthz.go                      # ← lin new 已创建
-│   │   │   └── post.go                         # ✨ lin add 创建
+│   │   │   ├── handler.go                      # ← linctl new 已创建
+│   │   │   ├── healthz.go                      # ← linctl new 已创建
+│   │   │   └── post.go                         # ✨ linctl add 创建
 │   │   ├── biz/
 │   │   │   ├── biz.go                          # ✏ AST 注入：PostV1()
 │   │   │   └── v1/
-│   │   │       └── post/                       # ✨ lin add 创建该子目录
+│   │   │       └── post/                       # ✨ linctl add 创建该子目录
 │   │   │           ├── post.go                 # 接口 + 工厂
 │   │   │           ├── create.go               # Create 方法
 │   │   │           ├── update.go               # Update 方法
@@ -32,29 +32,29 @@ myblog/
 │   │   │           └── list.go                 # List 方法
 │   │   ├── store/
 │   │   │   ├── store.go                        # ✏ AST 注入：Posts()
-│   │   │   └── post.go                         # ✨ lin add 创建
+│   │   │   └── post.go                         # ✨ linctl add 创建
 │   │   ├── model/
-│   │   │   └── post.gen.go                     # ✨ lin add 创建（占位）
+│   │   │   └── post.gen.go                     # ✨ linctl add 创建（占位）
 │   │   └── pkg/
 │   │       ├── conversion/
-│   │       │   └── post.go                     # ✨ lin add 创建
+│   │       │   └── post.go                     # ✨ linctl add 创建
 │   │       └── validation/
-│   │           └── post.go                     # ✨ lin add 创建
+│   │           └── post.go                     # ✨ linctl add 创建
 │   └── pkg/
 │       ├── errno/
-│       │   ├── errno.go                        # ← lin new 已创建
+│       │   ├── errno.go                        # ← linctl new 已创建
 │       │   ├── register.go                     # ✏ AST 注入：RegisterErrors
-│       │   └── post.go                         # ✨ lin add 创建
+│       │   └── post.go                         # ✨ linctl add 创建
 │       └── ...
 └── pkg/
     └── api/
         └── myblog/
             └── v1/
                 ├── myblog.proto                # ✏ AST 注入：import "post.proto"
-                └── post.proto                  # ✨ lin add --with proto 创建
+                └── post.proto                  # ✨ linctl add --with proto 创建
 ```
 
-**总览**：`lin add Post`（默认 `--with conversion,validation,proto,errno`）会：
+**总览**：`linctl add Post`（默认 `--with conversion,validation,proto,errno`）会：
 
 - ✨ **创建 13 个文件**：1 handler + 6 biz 文件（1 接口 + 5 动词）+ 1 store + 1 model + 1 conversion + 1 validation + 1 errno + 1 proto = **1+6+1+1+1+1+1+1 = 13**
 - ✏ **AST 注入 4 个中央文件**：`biz.go` / `store.go` / `<app>.proto` / `errno/register.go`
@@ -241,7 +241,7 @@ import (
 type PostStore interface {
     Create(ctx context.Context, post *model.PostM) error
     Update(ctx context.Context, post *model.PostM) error
-    Delete(ctx context.Context, opts *where.Options) error
+    Delete(ctx context.Context, opts *where.Options) (int64, error)
     Get(ctx context.Context, opts *where.Options) (*model.PostM, error)
     List(ctx context.Context, opts *where.Options) (int64, []*model.PostM, error)
 }
@@ -303,14 +303,14 @@ func (PostM) TableName() string {
 
 #### 3.4.1 推荐工作流：搭配 `cmd/gen-gorm-model/`
 
-`lin new` **默认生成** `cmd/gen-gorm-model/gen_gorm_model.go`（参照 [miniblog-v4](../../../miniblog-v4/cmd/gen-gorm-model/gen_gorm_model.go) 风格）：
+`linctl new` **默认生成** `cmd/gen-gorm-model/gen_gorm_model.go`（参照 [miniblog-v4](../../../miniblog-v4/cmd/gen-gorm-model/gen_gorm_model.go) 风格）：
 
 ```
 <project-root>/
 ├── cmd/
 │   ├── <app>/                        # 业务二进制
 │   │   └── main.go
-│   └── gen-gorm-model/                # ✨ lin new 默认生成
+│   └── gen-gorm-model/                # ✨ linctl new 默认生成
 │       └── gen_gorm_model.go          # 调用 gorm.io/gen 反推 model
 └── Makefile                           # 含 gen-model target
 ```
@@ -416,12 +416,12 @@ COMMANDS ?= $(filter-out $(PROJ_ROOT_DIR)/cmd/gen-gorm-model, \
 
 | 维度 | 决策 |
 | --- | --- |
-| `cmd/gen-gorm-model/` 由谁生成 | ✅ `lin new` 默认生成 |
-| 占位 `*.gen.go` 由谁生成 | ✅ `lin add <Resource>` 生成（让 `go build` 立即通过） |
+| `cmd/gen-gorm-model/` 由谁生成 | ✅ `linctl new` 默认生成 |
+| 占位 `*.gen.go` 由谁生成 | ✅ `linctl add <Resource>` 生成（让 `go build` 立即通过） |
 | `gorm.io/gen` 依赖 | ✅ 自动加入生成项目的 `go.mod`（非 lin 自身依赖） |
 | `samber/lo` 依赖 | ✅ 同上（用于 JSON 标签 camelCase 转换） |
-| `pkg/db` | ✅ 由 `lin new` 生成（包含 `NewPostgreSQL` 等连接器） |
-| 重复 `lin add` 时 placeholder 处理 | 默认 skip（[02 §4.6](./02-command-set.md#46-幂等性与文件冲突策略)）；保留用户 gorm gen 产出 |
+| `pkg/db` | ✅ 由 `linctl new` 生成（包含 `NewPostgreSQL` 等连接器） |
+| 重复 `linctl add` 时 placeholder 处理 | 默认 skip（[02 §4.6](./02-command-set.md#46-幂等性与文件冲突策略)）；保留用户 gorm gen 产出 |
 | `make gen-model` 后产物归属 | 用户提交（替代 lin 的占位） |
 | `cmd/gen-gorm-model` 排除 build | ✅ Makefile 显式 filter-out |
 
@@ -429,7 +429,7 @@ COMMANDS ?= $(filter-out $(PROJ_ROOT_DIR)/cmd/gen-gorm-model, \
 
 `gorm.io/gen` / `samber/lo` / `gorm` 仅出现在**生成项目的 go.mod**，**不**进 lin 自身依赖。
 
-lin 自身仍保持 ≤ 8 个直接依赖（详见 [01 §9](./01-architecture-blueprint.md#9-关键非功能需求)）。
+lin 工具自身仍保持 ≤ 8 个直接依赖（详见 [01 §9](./01-architecture-blueprint.md#9-关键非功能需求)）。
 
 ---
 
@@ -765,11 +765,11 @@ func RegisterAll() {
 
 | 命令 | 等价于 | 文件数 | 适用 |
 | --- | --- | --- | --- |
-| `lin add Post` | `--with conversion,validation,proto,errno` | **13**（默认全栈） | 完整 REST 资源 |
-| `lin add Post --without conversion,validation` | `--with proto,errno` | **11** | 只要 REST 接口，手工写转换/校验 |
-| `lin add Post --without proto` | `--with conversion,validation,errno` | **12** | 不需要 grpc-gateway |
-| `lin add Post --without conversion,validation,proto` | `--with errno` | **10** | 极简，仅含错误码 |
-| `lin add Post --without conversion,validation,proto,errno` | `--with`（空） | **9** | 极简纯逻辑（不推荐） |
+| `linctl add Post` | `--with conversion,validation,proto,errno` | **13**（默认全栈） | 完整 REST 资源 |
+| `linctl add Post --without conversion,validation` | `--with proto,errno` | **11** | 只要 REST 接口，手工写转换/校验 |
+| `linctl add Post --without proto` | `--with conversion,validation,errno` | **12** | 不需要 grpc-gateway |
+| `linctl add Post --without conversion,validation,proto` | `--with errno` | **10** | 极简，仅含错误码 |
+| `linctl add Post --without conversion,validation,proto,errno` | `--with`（空） | **9** | 极简纯逻辑（不推荐） |
 
 > **必选 9 文件**：handler(1) + biz(6) + store(1) + model(1)；可选 4 文件：conversion / validation / errno / proto 各 1。
 
@@ -789,14 +789,14 @@ func RegisterAll() {
 
 ## 6. CRUD 动词裁剪
 
-如不需要 5 个标准动词（CRUD + List），可以在 `lin add` 命令使用 `--ops` flag：
+如不需要 5 个标准动词（CRUD + List），可以在 `linctl add` 命令使用 `--ops` flag：
 
 ```bash
 # 仅生成 Get + List（只读资源）
-lin add Audit --ops get,list
+linctl add Audit --ops get,list
 
 # 仅生成 Create + Get（不可变资源）
-lin add Event --ops create,get
+linctl add Event --ops create,get
 ```
 
 支持的 `--ops` 值：`create` / `update` / `delete` / `get` / `list`（默认全部）。
@@ -806,10 +806,10 @@ lin add Event --ops create,get
 ## 7. 多个资源批量生成
 
 ```bash
-lin add Post Comment Tag
+linctl add Post Comment Tag
 ```
 
-`lin` 会**逐个**处理每个资源（不并发，避免 AST 注入冲突），每个资源完整执行：创建文件 → AST 注入 → 校验。任意一个失败时，**整批回滚**（前面已成功的也回滚）。
+`linctl` 会**逐个**处理每个资源（不并发，避免 AST 注入冲突），每个资源完整执行：创建文件 → AST 注入 → 校验。任意一个失败时，**整批回滚**（前面已成功的也回滚）。
 
 ---
 
@@ -828,7 +828,7 @@ lin add Post Comment Tag
 
 ## 9. 与 miniblog-v4 的差异
 
-| 维度 | miniblog-v4 实际 | lin 生成 | 备注 |
+| 维度 | miniblog-v4 实际 | linctl 生成 | 备注 |
 | --- | --- | --- | --- |
 | biz/v1 子目录命名 | `user/` | `post/` | 一致：lowercase |
 | biz 接口命名 | `UserBiz` | `PostBiz` | 一致：PascalCase + Biz |
@@ -849,7 +849,7 @@ lin add Post Comment Tag
 
 资源相关模板位于 `internal/templates/resource/`，关键文件：
 
-| 模板 | 输出（示例 `lin add Post`） |
+| 模板 | 输出（示例 `linctl add Post`） |
 | --- | --- |
 | `handler.go.tpl` | `internal/myblog/handler/post.go` |
 | `biz/biz_iface.go.tpl` + `biz/biz_struct.go.tpl` | `internal/myblog/biz/v1/post/post.go`（合并输出） |
