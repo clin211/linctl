@@ -141,11 +141,10 @@ linctl add Post   # 期望：⊝ skipped 全部
 | 5.2 | 更新 `lin/README.md` | README.md |
 | 5.3 | 更新 `lin/Makefile`：`APP=linctl`，构建产物 `_output/bin/linctl` | Makefile |
 | 5.4 | 归档 `lin/docs/` 旧版主线文档到 `lin/docs/legacy/` | docs/ |
-| 5.5 | 在 `lin/docs/features/README.md` 标记所有文档为 Stable | docs/features/README.md |
-| 5.6 | 修订 `CONTRIBUTING.md` | CONTRIBUTING.md |
-| 5.7 | 发布 v0.1.0-alpha tag | git tag |
-| 5.8 | CI 跑通：`go build` / `go test` / E2E | .github/workflows/ |
-| 5.9 | 在 README 顶部添加 v1 → v2 迁移说明 | README.md |
+| 5.5 | 在 `linctl/docs/features/README.md` 标记所有文档为 Stable | docs/features/README.md |
+| 5.6 | 发布 v0.1.0-alpha tag | git tag |
+| 5.7 | CI 跑通：`go build` / `go test` / E2E | .github/workflows/ |
+| 5.8 | 在 README 顶部添加 v1 → v2 迁移说明 | README.md |
 
 ---
 
