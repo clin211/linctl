@@ -62,7 +62,7 @@ cobra command
 | 00-refactor-rationale.md | 重构背景与决策 |
 | 01-architecture-blueprint.md | 架构分层与关键抽象 |
 | 02-command-set.md | 6 个命令的完整设计（flag / 行为 / 退出码） |
-| 03-resource-scaffold.md | lin add 生成的文件清单 |
+| 03-resource-scaffold.md | linctl add 生成的文件清单 |
 | 04-template-system.md | 模板加载 / 渲染 / 变量体系 |
 | 05-registration-strategy.md | AST 注入语义与锚点规范 |
 | 06-migration-plan.md | v1 → v2 分阶段迁移计划 |

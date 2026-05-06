@@ -8,7 +8,7 @@ func RegisterErrors(errs ...*BizError) {
 
 // RegisterAll is called once at application startup to register all resource errors.
 //
-// `lin add <Resource> --with errno` appends new RegisterErrors(<Resource>Errors()...)
+// `linctl add <Resource> --with errno` appends new RegisterErrors(<Resource>Errors()...)
 // statements to this function body via AST.
 func RegisterAll() {
 }

@@ -12,7 +12,7 @@ import (
 
 // IStore defines the methods that the store layer needs to implement.
 //
-// `lin add <Resource>` appends new methods to this interface via AST.
+// `linctl add <Resource>` appends new methods to this interface via AST.
 type IStore interface {
 {{- if and (ne .Storage "memory") (ne .Storage "mongo")}}
 	// DB returns the underlying *gorm.DB for direct access when needed.

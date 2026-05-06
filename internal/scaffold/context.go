@@ -6,8 +6,8 @@
 //   - context.go : 项目上下文（Module/AppName/Storage 推断）
 //   - plan.go    : 文件清单 + 注入清单
 //   - render.go  : 模板渲染封装
-//   - project.go : lin new 入口
-//   - resource.go: lin add 入口（后续 stage）
+//   - project.go : linctl new 入口
+//   - resource.go: linctl add 入口（后续 stage）
 package scaffold
 
 import (
@@ -28,8 +28,8 @@ import (
 // Context 持有当前命令的全部上下文信息。
 //
 // 字段来源详见：
-//   - lin new : 由命令行 flags 直接构造
-//   - lin add : 由 LoadContext 从 ./go.mod / ./cmd/* 推断（详见 02 §4.4）
+//   - linctl new : 由命令行 flags 直接构造
+//   - linctl add : 由 LoadContext 从 ./go.mod / ./cmd/* 推断（详见 02 §4.4）
 type Context struct {
 	// ProjectName 是用户传入的项目名（如 "myblog"）。
 	ProjectName string
@@ -55,7 +55,7 @@ type Context struct {
 	// Features 是启用的可选特性：otel | healthz | user | swagger | preloader 等。
 	Features []string
 
-	// Resource 仅在 lin add 时有效：PascalCase 资源名（如 "Post"）。
+	// Resource 仅在 linctl add 时有效：PascalCase 资源名（如 "Post"）。
 	Resource string
 
 	// Templates 是模板加载器（按 04 §2 优先级查找）。
@@ -156,7 +156,7 @@ func ValidateModulePath(module string) error {
 	return nil
 }
 
-// NewContextFromFlags 用于 lin new：直接由 flags 构造（不需要推断）。
+// NewContextFromFlags 用于 linctl new：直接由 flags 构造（不需要推断）。
 func NewContextFromFlags(flags Flags) (*Context, error) {
 	if err := ValidateProjectName(flags.ProjectName); err != nil {
 		return nil, err
@@ -272,7 +272,7 @@ func NewContextFromFlags(flags Flags) (*Context, error) {
 	}, nil
 }
 
-// LoadContext 用于 lin add：从已有项目根推断元信息（go.mod / cmd/<app>/ / store 中的 import）。
+// LoadContext 用于 linctl add：从已有项目根推断元信息（go.mod / cmd/<app>/ / store 中的 import）。
 //
 // 实现来源：02 §4.4 + 04 §4.1。
 func LoadContext(rootDir string, flags Flags) (*Context, error) {
@@ -306,7 +306,7 @@ func LoadContext(rootDir string, flags Flags) (*Context, error) {
 		}
 	}
 
-	// 4. 检查必要的目录结构（model/ 由 lin add 创建，所以不强制要求）
+	// 4. 检查必要的目录结构（model/ 由 linctl add 创建，所以不强制要求）
 	requiredDirs := []string{
 		filepath.Join(projectRoot, "internal", appName, "handler"),
 		filepath.Join(projectRoot, "internal", appName, "biz"),

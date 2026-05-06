@@ -6,7 +6,7 @@ import (
 
 // IBiz defines the methods that must be implemented by the business layer.
 //
-// `lin add <Resource>` appends new methods to this interface via AST.
+// `linctl add <Resource>` appends new methods to this interface via AST.
 type IBiz interface {
 }
 

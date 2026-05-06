@@ -10,9 +10,9 @@ import (
 type PlanKind int
 
 const (
-	// PlanKindProject 表示 lin new 生成的项目骨架计划。
+	// PlanKindProject 表示 linctl new 生成的项目骨架计划。
 	PlanKindProject PlanKind = iota
-	// PlanKindResource 表示 lin add 生成的资源骨架计划。
+	// PlanKindResource 表示 linctl add 生成的资源骨架计划。
 	PlanKindResource
 )
 

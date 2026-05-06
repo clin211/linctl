@@ -19,7 +19,7 @@ type templateVars struct {
 	Cache       string
 	Framework   string
 	Features    []string
-	Resource    string // PascalCase resource name (e.g. "Post"), only set for lin add
+	Resource    string // PascalCase resource name (e.g. "Post"), only set for linctl add
 	Author      string
 	Email       string
 	Year        int

@@ -25,7 +25,7 @@ type AddOptions struct {
 	SkipImports bool     // skip import statements
 }
 
-// AddResource is the core of lin add.
+// AddResource is the core of linctl add.
 //
 // Design source: 02 §4.5 behaviour flow, 03 §1 resource layers, 05 §5 injection order.
 func AddResource(ctx *Context, name string, opts AddOptions) error {
