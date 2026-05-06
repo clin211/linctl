@@ -71,7 +71,7 @@
 `linctl add Post` 的所有操作（创建 + 注入）作为单一事务：
 
 ```
-1. 创建临时备份点（.linctl/.backup/<ts>/）
+1. 创建临时备份点（用户缓存目录，不在项目内）
 2. 创建文件（顺序）
 3. 执行 AST 注入（顺序）
 4. 校验：渲染完的项目能 go build（如启用 --strict）
@@ -323,7 +323,7 @@ service MyblogService {
 ```
         ┌────────────────────────────────────┐
         │ Step 0: 创建备份                    │
-        │   .linctl/.backup/<ts>/                │
+        │   备份到用户缓存目录                    │
         │     biz.go  store.go  ...           │
         └─────────────────┬──────────────────┘
                           │
@@ -356,39 +356,44 @@ service MyblogService {
                             └────────────────┘
 ```
 
-### 5.1 `.linctl/` 工作目录与 `.gitignore` 契约
+### 5.1 备份目录策略（不污染用户项目）
 
-`linctl add` 在项目根创建 `.linctl/` 工作目录用于事务、备份、模板缓存：
+`linctl add` 的临时 AST 备份存放在**用户级缓存目录**（不在用户项目内），项目根永远干净：
 
 ```
-<project-root>/
-├── .linctl/
-│   ├── .backup/<timestamp>/      # AST 注入的临时备份（成功即删，保留最近 3 次）
-│   │   ├── biz.go
-│   │   ├── store.go
-│   │   └── ...
-│   ├── templates/                 # 项目级模板覆盖（可选；用户提交）
-│   └── .last-run.json             # 最近一次操作的 audit log（可选）
-└── .gitignore                     # ← linctl new 自动写入排除规则
+<UserCacheDir>/
+└── linctl/
+    └── backups/
+        └── <basename(rootDir)>-<6字节hash>/   # 按项目隔离
+            └── <timestamp>/                    # 单次注入的备份；成功即删
+                ├── biz.go
+                ├── store.go
+                └── ...
 ```
+
+> 各平台 `<UserCacheDir>` 默认值：
+> - macOS：`~/Library/Caches`
+> - Linux：`~/.cache`（或 `$XDG_CACHE_HOME`）
+> - Windows：`%LocalAppData%`
+>
+> 测试可通过环境变量 `LINCTL_BACKUP_DIR` 覆盖整个根。
 
 **关键规则**：
 
-| 路径 | 是否进 git | `.gitignore` 规则 |
+| 内容 | 位置 | 是否进 git |
 | --- | --- | --- |
-| `.linctl/.backup/` | ❌ 永远不进 | `.linctl/.backup/` |
-| `.linctl/.last-run.json` | ❌ 永远不进 | `.linctl/.last-run.json` |
-| `.linctl/templates/` | ✅ 用户决定提交（团队共享） | 不排除 |
+| AST 注入临时备份 | `<UserCacheDir>/linctl/backups/<project>/<ts>/` | ❌ 不在项目内 |
+| 项目级模板覆盖（可选） | `<project-root>/.linctl/templates/`（用户**手动**创建） | ✅ 用户决定 |
 
-`linctl add` 执行前强校验：若项目 `.gitignore` 缺少 `.linctl/.backup/` 行，会先自动追加（`⚠ updated .gitignore`）。
+**linctl 工具不会主动在用户项目目录创建任何 `.linctl/` 子目录或修改用户的 `.gitignore`。**
 
 ### 5.2 备份生命周期
 
 | 时机 | 动作 |
 | --- | --- |
-| 注入前 | `cp <central-file> .linctl/.backup/<ts>/<central-file>` |
-| 注入成功 | `rm -rf .linctl/.backup/<ts>/`（保留最近 3 次） |
-| 注入失败 | 自动从 `.linctl/.backup/<ts>/` 恢复中央文件 |
+| 注入前 | `cp <central-file> <UserCacheDir>/linctl/backups/<project>/<ts>/<central-file>` |
+| 注入成功 | `rm -rf <UserCacheDir>/linctl/backups/<project>/<ts>/`（保留最近 3 次） |
+| 注入失败 | 自动从 `<UserCacheDir>/linctl/backups/<project>/<ts>/` 恢复中央文件 |
 
 ---
 
@@ -433,7 +438,7 @@ linctl add Post --no-inject
 | Windows 行尾符 (CRLF) | 解析时归一化为 LF；写入时按目标文件原行尾符保留 |
 | 文件 git untracked | 注入正常进行；用户可后续 `git add` |
 | 文件 git uncommitted（已 staged） | 注入正常；`--strict` 模式可要求工作区干净 |
-| `.linctl/.backup/` 已被 git tracked | warn；提示用户检查 `.gitignore` |
+| 用户曾使用旧版 linctl 在项目内留下 `.linctl/` 目录 | 不影响功能；用户可手动删除 |
 
 ---
 

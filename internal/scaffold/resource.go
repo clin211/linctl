@@ -70,7 +70,6 @@ func AddResource(ctx *Context, name string, opts AddOptions) error {
 	}
 
 	// 7. Execute with rollback on failure
-	ts := linas.NewTimestamp()
 	var created []string
 
 	// 7a. Render (create new files)
@@ -111,10 +110,7 @@ func AddResource(ctx *Context, name string, opts AddOptions) error {
 		}
 	}
 
-	// 8. Ensure .gitignore has backup exclusion
-	ensureGitignore(ctx.RootDir, ts)
-
-	// 9. Next steps
+	// 8. Next steps
 	fmt.Printf("📦 Next steps:\n")
 	if hasProto(ctx) {
 		fmt.Printf("   make protoc\n")
@@ -362,23 +358,3 @@ func cleanupCreated(paths []string) {
 	}
 }
 
-// ensureGitignore ensures .linctl/.backup/ is excluded from git.
-func ensureGitignore(rootDir, _ string) {
-	giPath := filepath.Join(rootDir, ".gitignore")
-	data, err := os.ReadFile(giPath)
-	if err != nil {
-		// Can't read .gitignore, skip
-		return
-	}
-	content := string(data)
-	const backupLine = ".linctl/.backup/"
-	if strings.Contains(content, backupLine) {
-		return
-	}
-	if !strings.HasSuffix(content, "\n") {
-		content += "\n"
-	}
-	content += "\n# linctl scaffolding tool runtime files\n" + backupLine + "\n.linctl/.last-run.json\n"
-	_ = os.WriteFile(giPath, []byte(content), 0o644)
-	fmt.Println("   ⚠  updated .gitignore (added .linctl/.backup/ exclusion)")
-}

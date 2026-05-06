@@ -8,6 +8,8 @@
 package ast
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -19,6 +21,31 @@ import (
 
 	"github.com/clin211/linctl/internal/pkg/errs"
 )
+
+// backupEnv lets tests redirect the backup root via env var.
+const backupEnv = "LINCTL_BACKUP_DIR"
+
+// projectBackupBase returns the per-project backup root directory under the
+// user-level cache (so backups never live inside the user's project tree).
+//
+// Layout: <UserCacheDir>/linctl/backups/<basename(rootDir)>-<short-hash>
+// Override the entire root via the LINCTL_BACKUP_DIR env (used by tests).
+func projectBackupBase(rootDir string) (string, error) {
+	if env := os.Getenv(backupEnv); env != "" {
+		return env, nil
+	}
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		return "", err
+	}
+	abs, absErr := filepath.Abs(rootDir)
+	if absErr != nil {
+		abs = rootDir
+	}
+	h := sha256.Sum256([]byte(abs))
+	name := filepath.Base(abs) + "-" + hex.EncodeToString(h[:6])
+	return filepath.Join(cacheDir, "linctl", "backups", name), nil
+}
 
 // Injector orchestrates backup, mutation, and rollback of central files.
 type Injector struct {
@@ -180,11 +207,16 @@ func WriteFile(path string, f *dst.File) error {
 	return nil
 }
 
-// BackupFile copies src (relative to rootDir) to .linctl/.backup/<ts>/<rel>.
-// Returns the backup path.
+// BackupFile copies src (relative to rootDir) into the user-level backup
+// cache: <projectBackupBase>/<ts>/<rel>. Returns the backup path.
 func BackupFile(rootDir, relPath, ts string) (string, error) {
 	src := filepath.Join(rootDir, relPath)
-	dstPath := filepath.Join(rootDir, ".linctl", ".backup", ts, relPath)
+	base, err := projectBackupBase(rootDir)
+	if err != nil {
+		return "", errs.Wrap(errs.CodeASTBackupFailed,
+			"ast: locate user cache dir", err)
+	}
+	dstPath := filepath.Join(base, ts, relPath)
 
 	if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
 		return "", errs.Wrap(errs.CodeASTBackupFailed,
@@ -220,7 +252,12 @@ func RestoreFromBackup(backupPath, originalPath string) error {
 // CleanupBackup removes the backup directory for a given timestamp.
 // Also prunes oldest backups keeping only the 3 most recent.
 func CleanupBackup(rootDir, ts string) error {
-	backupDir := filepath.Join(rootDir, ".linctl", ".backup", ts)
+	base, err := projectBackupBase(rootDir)
+	if err != nil {
+		return errs.Wrap(errs.CodeASTBackupFailed,
+			"ast: locate user cache dir", err)
+	}
+	backupDir := filepath.Join(base, ts)
 	if err := os.RemoveAll(backupDir); err != nil && !os.IsNotExist(err) {
 		return errs.Wrap(errs.CodeASTBackupFailed,
 			fmt.Sprintf("ast: cleanup backup %s", ts), err)
@@ -236,7 +273,10 @@ func NewTimestamp() string {
 
 // pruneOldBackups keeps only the 3 most recent backup directories.
 func pruneOldBackups(rootDir string) {
-	parent := filepath.Join(rootDir, ".linctl", ".backup")
+	parent, err := projectBackupBase(rootDir)
+	if err != nil {
+		return
+	}
 	entries, err := os.ReadDir(parent)
 	if err != nil {
 		return

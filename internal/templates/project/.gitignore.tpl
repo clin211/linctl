@@ -31,10 +31,6 @@ _output/
 # macOS
 .DS_Store
 
-# lin backup and last-run metadata
-.linctl/.backup/
-.linctl/.last-run.json
-
 # Environment files
 .env
 .env.*

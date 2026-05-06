@@ -10,6 +10,9 @@ import (
 )
 
 func TestBackupAndRestore(t *testing.T) {
+	backupRoot := t.TempDir()
+	t.Setenv("LINCTL_BACKUP_DIR", backupRoot)
+
 	root := t.TempDir()
 
 	relPath := filepath.Join("internal", "myblog", "biz", "biz.go")
@@ -54,13 +57,17 @@ func TestBackupAndRestore(t *testing.T) {
 	if err := ast.CleanupBackup(root, ts); err != nil {
 		t.Fatalf("CleanupBackup: %v", err)
 	}
-	backupDir := filepath.Join(root, ".linctl", ".backup", ts)
-	if _, err := os.Stat(backupDir); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(root, ".linctl")) ; !os.IsNotExist(err) {
+		t.Error("backup must not be created inside the user project tree")
+	}
+	if _, err := os.Stat(backupPath); !os.IsNotExist(err) {
 		t.Error("backup dir should be removed after cleanup")
 	}
 }
 
 func TestInjector_Inject(t *testing.T) {
+	t.Setenv("LINCTL_BACKUP_DIR", t.TempDir())
+
 	root := t.TempDir()
 
 	bizDir := filepath.Join(root, "internal", "myblog", "biz")
@@ -138,6 +145,10 @@ func RegisterAll() {
 
 	if err := injector.Inject(plan); err != nil {
 		t.Fatalf("Inject: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(root, ".linctl")); !os.IsNotExist(err) {
+		t.Error("Inject must not create .linctl/ inside the user project tree")
 	}
 
 	bizData, err := os.ReadFile(bizFile)
