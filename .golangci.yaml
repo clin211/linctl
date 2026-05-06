@@ -64,7 +64,7 @@ linters-settings:
       - name: redefines-builtin-id
 
   goimports:
-    local-prefixes: github.com/clin211/lin
+    local-prefixes: github.com/clin211/linctl
 
   misspell:
     locale: US

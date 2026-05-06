@@ -183,7 +183,7 @@ rg -l '"templates/' lin/internal/component/ lin/internal/cli/ lin/internal/codeg
 
 ```bash
 # 1.4: 找出并改名 83 个伪模板
-cd lin/internal/template/_templates
+cd linctl/internal/template/_templates
 for f in $(find . -type f -name "*.tpl"); do
   if ! grep -q '{{' "$f"; then
     git mv "$f" "${f%.tpl}"

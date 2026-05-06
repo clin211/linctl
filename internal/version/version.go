@@ -2,7 +2,7 @@
 //
 // 这些变量由 -ldflags 注入：
 //
-//	go build -ldflags "-X github.com/clin211/lin/internal/version.Version=v1.0.0"
+//	go build -ldflags "-X github.com/clin211/linctl/internal/version.Version=v1.0.0"
 package version
 
 import (

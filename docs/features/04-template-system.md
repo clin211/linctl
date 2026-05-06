@@ -380,7 +380,7 @@ cp -r /tmp/lin/internal/templates ./my-templates
 
 # 方式 B：直接 sparse-checkout 仅取 templates 目录
 git clone --depth=1 --filter=blob:none --sparse https://github.com/<org>/lin.git
-cd lin && git sparse-checkout set internal/templates
+cd linctl && git sparse-checkout set internal/templates
 mv internal/templates ../my-templates && cd ..
 
 # 修改 my-templates/...

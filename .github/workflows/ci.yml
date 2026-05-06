@@ -66,7 +66,7 @@ jobs:
           cache: true
 
       - name: Build default binary
-        run: go build -trimpath -o _output/bin/linctl ./cmd/linctl
+        run: go build -trimpath -o _output/bin/linctl .
 
       - name: Verify binary
         run: |
@@ -74,7 +74,7 @@ jobs:
           ./_output/bin/linctl version
 
       - name: Build linctl-otel (with OpenTelemetry)
-        run: go build -trimpath -tags otel -o _output/bin/linctl-otel ./cmd/linctl
+        run: go build -trimpath -tags otel -o _output/bin/linctl-otel .
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4

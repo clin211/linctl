@@ -1,12 +1,12 @@
-# 贡献 linctl（lin 仓库）
+# 贡献 linctl
 
-感谢你对 lin 感兴趣！本文档涵盖核心开发约定。
+感谢你对 linctl 感兴趣！本文档涵盖核心开发约定。
 
 ## 开发环境
 
 ```bash
-git clone https://github.com/clin211/lin.git
-cd lin
+git clone https://github.com/clin211/linctl.git
+cd linctl
 make tools     # 安装 pin 版本的工具链（gofumpt / mockgen / gotestsum）
 make all       # lint + test + build
 ```
@@ -32,8 +32,8 @@ make all       # lint + test + build
 ## 代码架构
 
 ```
-lin/
-├── cmd/linctl/        # L0 入口层（≤ 50 行）
+linctl/
+├── main.go            # L0 入口层（≤ 50 行）
 ├── internal/
 │   ├── cli/           # L1 命令分发层（cobra 命令注册）
 │   ├── scaffold/      # L2 核心生成层（context / plan / render / project / resource）

@@ -5,7 +5,7 @@ flowchart TD
     User([User<br/>开发者]) -->|linctl new/add/plan/apply| CLI
 
     subgraph L4["L4 - CLI 入口层 (cmd/)"]
-        CLI[cmd/linctl/main.go<br/>cobra Root]
+        CLI[main.go<br/>cobra Root]
     end
 
     subgraph L3["L3 - 命令层 (internal/cli/)"]

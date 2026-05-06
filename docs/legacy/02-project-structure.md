@@ -512,7 +512,7 @@ func (o *newOptions) report(ctx context.Context, rep *orchestrator.Report) error
 
 ### L4：CLI 入口层
 
-#### `cmd/linctl/main.go`
+#### `main.go`
 
 ```go
 package main

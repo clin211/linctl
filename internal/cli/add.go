@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/clin211/lin/internal/pkg/errs"
-	"github.com/clin211/lin/internal/scaffold"
+	"github.com/clin211/linctl/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/scaffold"
 )
 
 func newAddCmd(g *Globals) *cobra.Command {

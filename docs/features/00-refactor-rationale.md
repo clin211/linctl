@@ -194,7 +194,7 @@ linctl
 
 ```
 lin/
-├── cmd/linctl/main.go
+├── main.go
 ├── internal/
 │   ├── cli/                      # cobra 命令分发
 │   │   ├── root.go

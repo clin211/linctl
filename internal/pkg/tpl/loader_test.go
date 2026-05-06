@@ -3,7 +3,7 @@ package tpl_test
 import (
 	"testing"
 
-	"github.com/clin211/lin/internal/pkg/tpl"
+	"github.com/clin211/linctl/internal/pkg/tpl"
 )
 
 func TestDefaultFuncs_CaseConversions(t *testing.T) {

@@ -490,7 +490,7 @@ jobs:
       - name: Binary size check
         if: matrix.os == 'ubuntu-latest'
         run: |
-          go build -ldflags="-s -w" -trimpath -o /tmp/linctl ./cmd/linctl
+          go build -ldflags="-s -w" -trimpath -o /tmp/linctl .
           SIZE=$(stat -c%s /tmp/linctl)
           echo "Binary size: $SIZE bytes"
           test $SIZE -lt 15728640

@@ -40,7 +40,7 @@ Phase 1  Phase 2     Phase 3      Phase 4         Phase 5
 | 1.2 | 新建 `internal/scaffold/` 包 + `Context`/`Plan` 类型 | scaffold/context.go, plan.go |
 | 1.3 | 新建 `internal/pkg/{tpl,fsx,logx,errs}` 基础库（沿用现有 `linctlerr`/`fs` 内核） | pkg/* |
 | 1.4 | 新建 `internal/cli/root.go`（cobra 根命令 + 全局 flag） | cli/root.go |
-| 1.5 | 新建 `cmd/linctl/main.go`（v2 可执行文件 **linctl**） | cmd/linctl/main.go |
+| 1.5 | 新建 `main.go`（v2 可执行文件 **linctl**） | main.go |
 | 1.6 | 引入 `dave/dst`、`bufbuild/protocompile`、`iancoleman/strcase`、`jinzhu/inflection` | go.mod |
 
 **Phase 1 完成后**：`linctl --help` 可以打印（即使啥都不能干）。
@@ -180,7 +180,7 @@ linctl add Post   # 期望：⊝ skipped 全部
 | --- | --- |
 | `internal/version/` | 保留 |
 | `internal/linctlerr/` | 重命名为 `internal/pkg/errs/`，逻辑不变 |
-| `cmd/linctl/` | v2 正式入口；可执行文件名为 **linctl** |
+| `main.go` | v2 正式入口；可执行文件名为 **linctl** |
 | `tests/` | 保留并扩展 |
 | `tools/` | 保留 |
 
@@ -264,7 +264,7 @@ linctl add Post   # 期望：⊝ skipped 全部
 迁移完成后，使用以下命令验证目标达成：
 
 ```bash
-cd lin
+cd linctl
 
 # 1) 总代码量
 find internal cmd -name "*.go" -not -name "*_test.go" | xargs wc -l | tail -1
@@ -283,7 +283,7 @@ go list -m all | tail -n +2 | head -20 | wc -l
 # 期望: ≤ 8 个
 
 # 5) 二进制大小
-go build -ldflags "-s -w" -o /tmp/linctl ./cmd/linctl
+go build -ldflags "-s -w" -o /tmp/linctl .
 ls -lh /tmp/lin
 # 期望: ≤ 6 MB
 ```
@@ -346,7 +346,7 @@ ls -lh /tmp/lin
 
 ### 11.5 v1.x → v2.0 的关系
 
-| v1.x（历史 plan/apply 主线） | v2.0（本次重构，`cmd/linctl`） |
+| v1.x（历史 plan/apply 主线） | v2.0（本次重构，根目录 `main.go`） |
 | --- | --- |
 | 10,525 行 / 14 模块 / 15+ 命令 | 3,160 行 / 5–7 模块 / 6 命令 |
 | 可执行文件多为 **`linctl`** | 可执行文件为 **`linctl`**（命令集与 flag 已变） |
@@ -409,7 +409,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: '${{ matrix.go }}' }
-      - run: go build -ldflags "-s -w" -o linctl ./cmd/linctl
+      - run: go build -ldflags "-s -w" -o linctl .
       - run: go test ./...
       - run: go vet ./...
 
@@ -420,7 +420,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: '1.22' }
-      - run: go build -o linctl ./cmd/linctl
+      - run: go build -o linctl .
       - run: bash tests/e2e/new_test.sh
       - run: bash tests/e2e/add_test.sh
       - run: bash tests/e2e/add_idempotent_test.sh
@@ -433,7 +433,7 @@ jobs:
         with: { go-version: '1.22' }
       - name: Build & check size
         run: |
-          go build -ldflags "-s -w" -o linctl ./cmd/linctl
+          go build -ldflags "-s -w" -o linctl .
           size=$(stat -c %s linctl)
           max=$((6 * 1024 * 1024))   # 6 MB
           if [ "$size" -gt "$max" ]; then

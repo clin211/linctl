@@ -755,9 +755,9 @@ build:
   matrix:
     include:
       - target: default
-        cmd: go build -o linctl ./cmd/linctl
+        cmd: go build -o linctl .
       - target: otel
-        cmd: go build -tags otel -o linctl-otel ./cmd/linctl
+        cmd: go build -tags otel -o linctl-otel .
   steps:
     - uses: actions/upload-artifact@v4
       with:

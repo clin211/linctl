@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/clin211/lin/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
 // WriteFileAtomic 原子地写入 dst：

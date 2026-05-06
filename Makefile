@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 # ===== 元数据 =====
 APP        := linctl
-PKG        := github.com/clin211/lin
+PKG        := github.com/clin211/linctl
 VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT     ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -40,13 +40,13 @@ build: $(BIN_DIR)/$(APP)
 $(BIN_DIR)/$(APP): $(shell find . -name '*.go' -not -path './_output/*' 2>/dev/null)
 	@mkdir -p $(BIN_DIR)
 	@echo "==> building $(APP) ($(VERSION))"
-	@go build -trimpath -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(APP) ./cmd/$(APP)
+	@go build -trimpath -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(APP) .
 
 .PHONY: build-otel
 build-otel:
 	@mkdir -p $(BIN_DIR)
 	@echo "==> building $(APP)-otel (with OpenTelemetry)"
-	@go build -trimpath -tags otel -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(APP)-otel ./cmd/$(APP)
+	@go build -trimpath -tags otel -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(APP)-otel .
 
 .PHONY: install
 install: build

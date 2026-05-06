@@ -242,8 +242,8 @@ deps-audit:
 
 > **OTel 与体积约束**：`go.opentelemetry.io/otel` SDK 约 ~2 MB，全量纳入会突破 15MB 上限。
 > 因此 OTel 仅作为 **可选 export**（详见 [14-observability.md §14.4.2](./14-observability.md)）：
-> - 默认 build：`go build ./cmd/linctl` —— 不包含 OTel，二进制 ≤ 15 MB
-> - 含 OTel build：`go build -tags otel ./cmd/linctl` —— 体积 ≤ 17 MB（用户主动选择）
+> - 默认 build：`go build .` —— 不包含 OTel，二进制 ≤ 15 MB
+> - 含 OTel build：`go build -tags otel .` —— 体积 ≤ 17 MB（用户主动选择）
 > - 自研轻量 trace 在两种 build 下都可用；OTel 仅作为可选输出后端
 
 ### 10.6.1 体积优化技巧
@@ -265,7 +265,7 @@ CI 加 `bloat check` 任务：
 ```yaml
 - name: Binary size check
   run: |
-    go build -ldflags="-s -w" -trimpath -o /tmp/linctl ./cmd/linctl
+    go build -ldflags="-s -w" -trimpath -o /tmp/linctl .
     SIZE=$(stat -f%z /tmp/linctl 2>/dev/null || stat -c%s /tmp/linctl)
     if [ $SIZE -gt 15728640 ]; then  # 15 MB
       echo "Binary too large: $SIZE bytes"

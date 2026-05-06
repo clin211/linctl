@@ -20,9 +20,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/clin211/lin/internal/pkg/errs"
-	"github.com/clin211/lin/internal/pkg/tpl"
-	"github.com/clin211/lin/internal/templates"
+	"github.com/clin211/linctl/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/pkg/tpl"
+	"github.com/clin211/linctl/internal/templates"
 )
 
 // Context 持有当前命令的全部上下文信息。

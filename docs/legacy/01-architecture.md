@@ -9,7 +9,7 @@ flowchart TD
     User([User<br/>开发者]) -->|linctl new/add/plan/apply| CLI
 
     subgraph L4["L4 - CLI 入口层 (cmd/)"]
-        CLI[cmd/linctl/main.go<br/>cobra Root]
+        CLI[main.go<br/>cobra Root]
     end
 
     subgraph L3["L3 - 命令层 (internal/cli/)"]
@@ -88,13 +88,13 @@ flowchart TD
 ## 1.2 分层职责详解
 
 ### L4 - CLI 入口层（最薄）
-- **包**：`cmd/linctl/`
+- **包**：根目录（`main.go`）
 - **职责**：仅做 cobra Root 组装、注册子命令、处理 panic、退出码。
 - **代码量**：< 50 行。
 - **不做**：任何业务逻辑、配置读取（交给 L3）。
 
 ```go
-// cmd/linctl/main.go
+// main.go
 package main
 
 import (

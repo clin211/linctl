@@ -3,8 +3,8 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/clin211/lin/internal/check"
-	"github.com/clin211/lin/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/check"
+	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
 func newDoctorCmd(g *Globals) *cobra.Command {

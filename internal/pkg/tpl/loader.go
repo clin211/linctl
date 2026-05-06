@@ -22,8 +22,8 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 
-	"github.com/clin211/lin/internal/pkg/errs"
-	"github.com/clin211/lin/internal/pkg/fsx"
+	"github.com/clin211/linctl/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/pkg/fsx"
 )
 
 // Options 控制 Loader 的覆盖目录。

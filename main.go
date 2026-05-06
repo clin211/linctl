@@ -1,13 +1,13 @@
-// Package main 是 linctl（lin v2）CLI 的二进制入口。
+// Package main 是 linctl（v2）CLI 的二进制入口。
 //
-// 设计来源：lin/docs/features/01-architecture-blueprint.md §3 「L0 入口层」。
+// 设计来源：docs/features/01-architecture-blueprint.md §3 「L0 入口层」。
 //
 // 职责（≤ 50 行）：
 //   - signal 处理（SIGINT / SIGTERM → cancel ctx）
 //   - 调用 cli.Execute 执行命令
 //   - 把 error 通过 errs.CodeOf 映射到退出码
 //
-// 可执行文件名：linctl（Go module 路径仍为 github.com/clin211/lin）。
+// 可执行文件名：linctl（Go module 路径：github.com/clin211/linctl）。
 package main
 
 import (
@@ -18,8 +18,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/clin211/lin/internal/cli"
-	"github.com/clin211/lin/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/cli"
+	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
 func main() {

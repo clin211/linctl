@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/clin211/lin/internal/pkg/errs"
-	"github.com/clin211/lin/internal/pkg/fsx"
+	"github.com/clin211/linctl/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/pkg/fsx"
 )
 
 // templateVars 是传递给模板执行的变量集合。

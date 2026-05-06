@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/clin211/lin/internal/ast"
+	"github.com/clin211/linctl/internal/ast"
 )
 
 func TestBackupAndRestore(t *testing.T) {

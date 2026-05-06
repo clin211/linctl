@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/clin211/lin/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
 // ProtoPayload carries parameters for AddProtoImport.

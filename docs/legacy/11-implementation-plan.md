@@ -77,7 +77,7 @@ gantt
 **Tasks**：
 
 - [x] `git init` linctl 仓库；MIT License；CONTRIBUTING.md 占位
-- [x] `cmd/linctl/main.go`（< 50 行；实际 60 行含 exitCodeFor 映射）
+- [x] `main.go`（< 50 行；实际 60 行含 exitCodeFor 映射）
 - [x] `internal/cli/root.go` 框架；`internal/cli/cmd_version.go`
 - [x] Makefile：`build` / `test` / `lint` / `tools` / `cover` / `build-otel`
 - [x] `.golangci.yaml`（17+ 个 linter 启用）

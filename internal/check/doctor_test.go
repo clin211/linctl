@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/clin211/lin/internal/check"
+	"github.com/clin211/linctl/internal/check"
 )
 
 func TestDoctor_Offline_ReturnsValidReport(t *testing.T) {

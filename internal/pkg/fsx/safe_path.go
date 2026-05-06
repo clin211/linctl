@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/clin211/lin/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
 // SafeJoin 把 root 与 rel 安全拼接成绝对路径，并校验最终路径不会跳出 root。

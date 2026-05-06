@@ -18,7 +18,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/clin211/lin/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
 // Globals 持有所有命令共享的全局 flag 状态。
@@ -79,7 +79,7 @@ Plus a few helpers: lint / doctor / version / completion.`,
 	return root
 }
 
-// Execute 是 cmd/linctl/main.go 调用的统一入口。
+// Execute 是 main.go 调用的统一入口。
 func Execute(ctx context.Context, args []string) error {
 	root := NewRootCmd()
 	root.SetArgs(args)

@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/clin211/lin/internal/pkg/errs"
-	"github.com/clin211/lin/internal/templates"
+	"github.com/clin211/linctl/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/templates"
 )
 
 // NewProject 是 lin new 的核心：根据 ctx 计算 Plan 并执行。

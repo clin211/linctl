@@ -8,7 +8,7 @@ import (
 	"github.com/dave/dst"
 	"github.com/dave/dst/decorator"
 
-	"github.com/clin211/lin/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
 // InterfacePayload carries parameters for AddInterfaceMethod.

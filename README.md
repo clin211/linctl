@@ -1,9 +1,9 @@
 # linctl v2
 
-[![CI](https://github.com/clin211/lin/actions/workflows/ci.yml/badge.svg)](https://github.com/clin211/lin/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/clin211/lin.svg)](https://pkg.go.dev/github.com/clin211/lin)
+[![CI](https://github.com/clin211/linctl/actions/workflows/ci.yml/badge.svg)](https://github.com/clin211/linctl/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/clin211/linctl.svg)](https://pkg.go.dev/github.com/clin211/linctl)
 
-> **linctl** — 零摩擦、幂等友好的 Go 后端脚手架工具。两条命令，一次生成，重跑安全。（Go module：`github.com/clin211/lin`）
+> **linctl** — 零摩擦、幂等友好的 Go 后端脚手架工具。两条命令，一次生成，重跑安全。
 
 ---
 
@@ -21,14 +21,14 @@
 ## 安装
 
 ```bash
-go install github.com/clin211/lin/cmd/linctl@latest
+go install github.com/clin211/linctl@latest
 ```
 
 或从源码构建：
 
 ```bash
-git clone https://github.com/clin211/lin.git
-cd lin
+git clone https://github.com/clin211/linctl.git
+cd linctl
 make build          # → _output/bin/linctl
 ```
 
@@ -122,7 +122,7 @@ myblog/
 
 ## v1 → v2 迁移
 
-v2 重构了命令集，不再支持 v1 的 `plan`/`apply` 范式；**v2 的可执行文件名为 `linctl`**（入口 `cmd/linctl`）。
+v2 重构了命令集，不再支持 v1 的 `plan`/`apply` 范式；**v2 的可执行文件名为 `linctl`**（入口位于仓库根目录）。
 
 | v1 命令 | v2 对应 | 说明 |
 |---------|---------|------|

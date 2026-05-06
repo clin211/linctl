@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/clin211/lin/internal/check"
+	"github.com/clin211/linctl/internal/check"
 )
 
 // makeTestProject creates a minimal lin v2 project in a temp directory.

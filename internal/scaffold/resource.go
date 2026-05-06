@@ -10,8 +10,8 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
 
-	linas "github.com/clin211/lin/internal/ast"
-	"github.com/clin211/lin/internal/pkg/errs"
+	linas "github.com/clin211/linctl/internal/ast"
+	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
 // AddOptions controls the behaviour of AddResource.

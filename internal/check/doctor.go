@@ -215,7 +215,7 @@ func checkTerminal() Item {
 
 func checkProxy(strict bool) Item {
 	client := &http.Client{Timeout: 5 * time.Second}
-	_, err := client.Get("https://proxy.golang.org/github.com/clin211/lin/@v/list")
+	_, err := client.Get("https://proxy.golang.org/github.com/clin211/linctl/@v/list")
 	if err != nil {
 		hint := "check your internet connection or use --offline"
 		status := "info"

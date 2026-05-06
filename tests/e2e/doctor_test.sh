@@ -11,7 +11,7 @@ case "$LIN_BIN" in /*) ;; *) LIN_BIN="$REPO_ROOT/$LIN_BIN" ;; esac
 if [ ! -x "$LIN_BIN" ]; then
     echo "Building linctl binary..."
     mkdir -p "$(dirname "$LIN_BIN")"
-    go build -o "$LIN_BIN" ./cmd/linctl
+    go build -o "$LIN_BIN" .
 fi
 LIN_BIN="$(cd "$(dirname "$LIN_BIN")" && pwd)/$(basename "$LIN_BIN")"
 

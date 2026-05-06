@@ -11,8 +11,8 @@ import (
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"golang.org/x/term"
 
-	"github.com/clin211/lin/internal/pkg/errs"
-	"github.com/clin211/lin/internal/scaffold"
+	"github.com/clin211/linctl/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/scaffold"
 )
 
 func stdinIsTerminal() bool {

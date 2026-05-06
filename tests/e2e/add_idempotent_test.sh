@@ -9,7 +9,7 @@ case "$LIN_BIN" in /*) ;; *) LIN_BIN="$REPO_ROOT/$LIN_BIN" ;; esac
 
 if [ ! -x "$LIN_BIN" ]; then
     mkdir -p "$(dirname "$LIN_BIN")"
-    go build -o "$LIN_BIN" ./cmd/linctl
+    go build -o "$LIN_BIN" .
 fi
 LIN_BIN="$(cd "$(dirname "$LIN_BIN")" && pwd)/$(basename "$LIN_BIN")"
 
@@ -21,7 +21,7 @@ E2E_COMMON="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 source "$E2E_COMMON"
 
 cd "$TMPDIR"
-lin_e2e_link_linhub_replace "$TMPDIR" "$REPO_ROOT"
+linctl_e2e_link_linhub_replace "$TMPDIR" "$REPO_ROOT"
 
 "$LIN_BIN" new myblog \
     --module github.com/test/myblog \

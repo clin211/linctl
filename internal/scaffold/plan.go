@@ -3,7 +3,7 @@ package scaffold
 import (
 	"os"
 
-	"github.com/clin211/lin/internal/pkg/errs"
+	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
 // PlanKind 区分 plan 的类型（项目骨架 / 资源骨架）。

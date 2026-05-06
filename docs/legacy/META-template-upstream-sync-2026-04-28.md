@@ -452,7 +452,7 @@ jobs:
           go-version: '1.22'
 
       - name: Build linctl
-        run: cd lin && go build -o ../bin/linctl ./cmd/linctl
+        run: cd linctl && go build -o ../bin/linctl .
 
       - name: Check template sync status
         id: sync_check
