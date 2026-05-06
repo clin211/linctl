@@ -13,7 +13,7 @@ func newNewCmd(g *Globals) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "new [project-name]",
 		Short: "Generate a new Go project skeleton",
-		Long: `Generate a fresh miniblog-v4 style project skeleton.
+		Long: `Generate a fresh Go backend project skeleton with a layered architecture inspired by DDD.
 
 In a terminal, run 'linctl new' with no arguments for an interactive wizard (Vite-style).
 In CI or scripts, pass the project directory name and --module (and usually --yes --non-interactive).`,

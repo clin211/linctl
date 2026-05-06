@@ -206,7 +206,7 @@ linctl add Post   # 期望：⊝ skipped 全部
 | 模板渲染产生不能编译的代码 | 中 | 高 | E2E 必跑 `go build`；CI 多平台验证 |
 | 删除模块时遗留对其的 import | 低 | 低 | `golangci-lint` 自动捕获 |
 | 锚点注释被用户误删导致重构后无法 add | 中 | 中 | `lint --fix` 提供恢复模板；文档显眼说明 |
-| 模板与 miniblog-v4 风格漂移 | 中 | 中 | 模板提交前与 miniblog-v4 实际代码做 diff |
+| 模板与三层架构（借鉴 DDD）参考实现漂移 | 中 | 中 | 模板提交前与参考项目代码做 diff |
 | 重构周期超出预期 | 中 | 低 | Phase 拆分；每 Phase 独立验证 |
 
 ---
@@ -234,17 +234,7 @@ linctl add Post   # 期望：⊝ skipped 全部
 
 ---
 
-## 7. 与 miniblog-v4 的协同
-
-模板的核心来源是 miniblog-v4，重构期间应：
-
-1. **严格 mirror**：每次模板改动应能在 miniblog-v4 找到对应风格。
-2. **diff 验证**：Phase 2 完成后，用 `linctl new` 生成的项目应**能与 miniblog-v4 等价**（除业务逻辑外）。
-3. **回流改动**：若发现 miniblog-v4 有需要改进的地方（如更清晰的注释），先在 miniblog-v4 改，再回流到 lin 模板。
-
----
-
-## 8. 工作量估算汇总
+## 7. 工作量估算汇总
 
 | Phase | 估计工作量 | 关键里程碑 |
 | --- | --- | --- |
@@ -259,7 +249,7 @@ linctl add Post   # 期望：⊝ skipped 全部
 
 ---
 
-## 9. 重构后的代码量验证（DoD）
+## 8. 重构后的代码量验证（DoD）
 
 迁移完成后，使用以下命令验证目标达成：
 
@@ -290,7 +280,7 @@ ls -lh /tmp/linctl
 
 ---
 
-## 10. 后续演进（v2 发布后）
+## 9. 后续演进（v2 发布后）
 
 | 时间 | 任务 |
 | --- | --- |
@@ -303,11 +293,11 @@ ls -lh /tmp/linctl
 
 ---
 
-## 11. SemVer 版本承诺
+## 10. SemVer 版本承诺
 
 `linctl`（lin 仓库发布之 CLI）严格遵循 [SemVer 2.0](https://semver.org)，且赋予其发布版本以下语义：
 
-### 11.1 版本号 → 变更范围映射
+### 10.1 版本号 → 变更范围映射
 
 | 字段 | 含义 | 影响 | 示例 |
 | --- | --- | --- | --- |
@@ -315,7 +305,7 @@ ls -lh /tmp/linctl
 | `MINOR`（v2.0 → v2.1） | **向后兼容的功能增强** | 新命令、新 flag、新可选层级 | 增加 `linctl add --with grpc`；新 mutator |
 | `PATCH`（v2.0.0 → v2.0.1） | **向后兼容的 bug 修复** | 修 bug、改优化、不影响生成结果 | 修 AST 边界 bug；改善错误信息 |
 
-### 11.2 模板内容变化的 SemVer 语义
+### 10.2 模板内容变化的 SemVer 语义
 
 由于「模板内容」是 lin 的核心资产，模板变化按以下规则映射版本号：
 
@@ -328,15 +318,15 @@ ls -lh /tmp/linctl
 | **删除某个 feature**（如废弃 `--features=user`） | 既有项目用 `--features=user` 会失败 | MAJOR |
 | **锚点注释格式变化** | 既有项目无法 `linctl add` 直到迁移 | MAJOR |
 
-### 11.3 已生成项目的兼容性承诺
+### 10.3 已生成项目的兼容性承诺
 
 | 维度 | 承诺 |
 | --- | --- |
 | **PATCH 升级** | 既有项目 `linctl add` **完全无感**（仅修 bug） |
 | **MINOR 升级** | 既有项目 `linctl add` **不破坏既有代码**；可能在新生成的资源中体现新风格（不强制替换老资源） |
-| **MAJOR 升级** | 不保证向后兼容；提供独立 [迁移指南](#114-跨-major-迁移指南)；旧 MAJOR 分支按 §11.5 定义获得维护 |
+| **MAJOR 升级** | 不保证向后兼容；提供独立 [迁移指南](#104-跨-major-迁移指南)；旧 MAJOR 分支按 §10.5 定义获得维护 |
 
-### 11.4 跨 MAJOR 迁移指南
+### 10.4 跨 MAJOR 迁移指南
 
 每个 MAJOR 发布伴随：
 
@@ -344,7 +334,7 @@ ls -lh /tmp/linctl
 2. **`linctl lint --migrate-from vN`** 子命令（Phase 2+ 评估）
 3. **CHANGELOG 中的破坏性变更清单**
 
-### 11.5 v1.x → v2.0 的关系
+### 10.5 v1.x → v2.0 的关系
 
 | v1.x（历史 plan/apply 主线） | v2.0（本次重构，根目录 `main.go`） |
 | --- | --- |
@@ -377,7 +367,7 @@ ls -lh /tmp/linctl
 - 2026-10 ~ 2027-04：仅安全
 - 2027-04 之后：冻结，仅可下载
 
-### 11.6 Pre-release 阶段（alpha / beta / rc）
+### 10.6 Pre-release 阶段（alpha / beta / rc）
 
 `v0.x` 系列 alpha/beta：
 
@@ -393,7 +383,7 @@ ls -lh /tmp/linctl
 
 ---
 
-## 12. CI 集成示例
+## 11. CI 集成示例
 
 ### 12.1 lin 自身仓库的 CI（GitHub Actions）
 

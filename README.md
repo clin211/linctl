@@ -1,4 +1,4 @@
-# linctl v2
+# linctl
 
 [![CI](https://github.com/clin211/linctl/actions/workflows/ci.yml/badge.svg)](https://github.com/clin211/linctl/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/clin211/linctl.svg)](https://pkg.go.dev/github.com/clin211/linctl)
@@ -11,7 +11,7 @@
 
 | 特性 | 说明 |
 |------|------|
-| **零摩擦上手** | `linctl new` 生成完整 miniblog-v4 骨架，无需手写样板代码 |
+| **零摩擦上手** | `linctl new` 生成完整 Go 后端服务骨架（三层架构 / DDD 风格），无需手写样板代码 |
 | **幂等重跑** | `linctl add` 重复执行不会破坏既有代码（AST 注入基于锚点，跳过已有内容） |
 | **自我诊断** | `linctl lint` 检查项目结构与 AST 完整性；`linctl doctor` 检查工具链 |
 | **纯 Go** | 无外部依赖运行时；单二进制，嵌入所有模板 |
@@ -92,7 +92,7 @@ linctl doctor --offline  # 检查工具链（跳过网络检查）
 
 | 命令 | 说明 |
 |------|------|
-| `linctl new <project>` | 生成新项目骨架（miniblog-v4 风格） |
+| `linctl new <project>` | 生成新项目骨架（三层架构，借鉴 DDD） |
 | `linctl add <Resource>...` | 在已有项目中添加全栈业务资源 |
 | `linctl lint [--fix]` | 校验项目结构与 AST 锚点完整性 |
 | `linctl doctor [--offline]` | 检查本地工具链与运行环境 |

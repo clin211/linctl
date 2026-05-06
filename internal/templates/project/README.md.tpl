@@ -4,7 +4,7 @@
 
 ## Overview
 
-{{.ProjectName | Title}} is a Go backend service built with the [miniblog-v4](https://github.com/clin211/miniblog-v4) project style.
+{{.ProjectName | Title}} is a Go backend service following a layered architecture (handler / biz / store) inspired by Domain-Driven Design.
 
 ## Tech Stack
 

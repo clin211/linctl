@@ -316,7 +316,7 @@ func LoadContext(rootDir string, flags Flags) (*Context, error) {
 		if _, err := os.Stat(d); os.IsNotExist(err) {
 			return nil, errs.New(errs.CodeNotProjectRoot,
 				fmt.Sprintf("scaffold: expected directory %q not found", d)).
-				WithHint("linctl v2 expects miniblog-v4 layout")
+				WithHint("linctl expects the standard layered project layout (cmd/, internal/<app>/, internal/pkg/, pkg/api/)")
 		}
 	}
 

@@ -17,7 +17,7 @@ func newAddCmd(g *Globals) *cobra.Command {
 		Short:   "Add full-stack business resource(s) to an existing project",
 		Long: `Add one or more full-stack business resources (handler/biz/store/model/...).
 
-Each resource follows the miniblog-v4 layout:
+Each resource follows the layered architecture (handler -> biz -> store, inspired by DDD):
   - handler/<lower>.go
   - biz/v1/<lower>/<lower>.go + create/update/delete/get/list.go
   - store/<lower>.go

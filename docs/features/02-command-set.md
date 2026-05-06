@@ -12,7 +12,7 @@
 
 ```
 linctl
-├── new <project-name>             # 生成新项目骨架（miniblog-v4 风格）
+├── new <project-name>             # 生成新项目骨架（三层架构风格（借鉴 DDD））
 ├── add <Resource>...              # 在已有项目中追加业务资源（含 AST 注入）
 ├── lint                           # 校验项目结构 + AST 完整性
 ├── doctor                         # 校验本地工具链与运行环境
@@ -125,7 +125,7 @@ CI 可以基于此行做指标采集。
 
 | 项目 | 说明 |
 | --- | --- |
-| **作用** | 在指定目录生成一个 miniblog-v4 风格的 Go 后端服务骨架 |
+| **作用** | 在指定目录生成一个 三层架构风格（借鉴 DDD）的 Go 后端服务骨架 |
 | **触发** | `linctl new <project-name>` 或 `linctl new`（交互式补全） |
 | **副作用** | 创建新目录 `<project-name>/` 并写入 ~40 个文件（含 `cmd/<app>/`、`cmd/gen-gorm-model/`、`pkg/db/`、`configs/<app>.yaml`、`Makefile` 等） |
 | **写入策略** | 目录不存在则创建；存在则报错（除非 `--force` 覆盖） |

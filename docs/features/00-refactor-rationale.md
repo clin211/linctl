@@ -13,7 +13,7 @@
 
 但项目的**真实需求**只有两条：
 
-1. 一键生成符合 [`miniblog-v4`](../../../miniblog-v4) 风格分层架构的 Go 服务骨架；
+1. 一键生成符合三层架构（借鉴 DDD）的 Go 服务骨架；
 2. 在已有项目中快速生成一个**业务资源（Resource）**的全套分层文件，让开发者可以直接填充业务逻辑。
 
 这两件事不需要：声明式 `plan/apply` 闭环、drift 检测、3-way merge、模板上游同步、复杂的 Feature 插件机制。
@@ -118,7 +118,7 @@ linctl
 
 ### 3.1 一句话定位（重写）
 
-> **`linctl` 是一款**专注于 Go 后端服务的极简骨架生成器**，遵循 `miniblog-v4` 的分层架构（cmd / internal/{app}/{handler,biz,store,model,pkg} / internal/pkg / pkg / api）。**
+> **`linctl` 是一款**专注于 Go 后端服务的极简骨架生成器**，遵循一套清晰的三层架构（cmd / internal/{app}/{handler,biz,store,model,pkg} / internal/pkg / pkg / api），借鉴 DDD 思想划分边界。**
 >
 > **它的使命是：让开发者在 30 秒内拿到一个可编译运行的项目骨架，在 5 秒内为既有项目加一个完整分层的业务资源。然后，工具退出舞台，把项目交还给开发者。**
 
@@ -133,7 +133,7 @@ linctl
 
 ### 3.3 是什么（Goals）
 
-- ✅ 生成**单一 miniblog-v4 风格**的项目骨架。
+- ✅ 生成**单一 三层架构风格（借鉴 DDD）**的项目骨架。
 - ✅ 在已有项目中追加**业务资源**（handler + biz + store + model + 可选 pkg/conversion + pkg/validation）。
 - ✅ 通过 flag 支持几个**主流变体**（如 `--storage=postgres|mysql|mongo|memory`、`--with-otel`、`--with-grpc`）。
 - ✅ 可读性强、错误信息清晰、生成完打印「下一步」清单。
@@ -148,8 +148,8 @@ linctl
 | 模板上游同步 / 远程模板拉取 | 模板全部 `embed.FS` 内置 |
 | 项目元数据状态文件（`PROJECT` / `linctl.yaml`） | 生成参数随命令传入，不持久化 |
 | Feature 插件注册中心 | 通过 flag 选择变体（如 `--storage=postgres`） |
-| 任意 Web/RPC 框架支持 | MVP 只支持 Gin（与 miniblog-v4 一致），未来再加 |
-| 任意持久化方案支持 | MVP 支持 PostgreSQL+GORM（参考 miniblog-v4），未来再加 |
+| 任意 Web/RPC 框架支持 | MVP 只支持 Gin，未来再加 |
+| 任意持久化方案支持 | MVP 支持 PostgreSQL+GORM，未来再加 |
 | 升级现有项目 | 不做 |
 | 反向工程 / `import` | 不做 |
 | Plugin 机制 | 不做 |
@@ -206,7 +206,7 @@ lin/
 │   │   ├── resource.go           # 资源骨架生成器
 │   │   └── render.go             # 模板渲染封装
 │   ├── templates/                # embed.FS 模板源
-│   │   ├── project/              # miniblog-v4 风格项目骨架
+│   │   ├── project/              # 三层架构风格（借鉴 DDD）项目骨架
 │   │   └── resource/             # 资源骨架（handler/biz/store/model/...）
 │   ├── pkg/
 │   │   ├── prompt/               # 交互式 UI（可选）
@@ -255,7 +255,7 @@ lin/
 **我的建议**：**A + C 混合**。
 - 核心层（handler/biz/store）使用 **A 约定式注册**，做到零冲突追加。
 - 边缘文件（如 errno、validation 注册）使用 **C TODO 提示**，避免黑魔法过多。
-- **不要 B（AST 注入）**：`miniblog-v4` 当前的注册风格已经是显式的 `biz.User = NewUserBiz()` 形式，AST 改这种代码很容易破坏作者风格。
+- **不要 B（AST 注入）**：项目模板的注册风格已经是显式的 `biz.User = NewUserBiz()` 形式，AST 改这种代码很容易破坏作者风格。
 
 ### 5.3 资源生成的"完整度"
 
@@ -263,7 +263,7 @@ lin/
 
 | 方案 | 文件层级 | 文件数 | 适用场景 |
 | --- | --- | --- | --- |
-| **A. 全栈** | handler + biz + store + model + conversion + validation + errno + proto | 7-9 | 完整复刻 miniblog-v4 |
+| **A. 全栈** | handler + biz + store + model + conversion + validation + errno + proto | 7-9 | 完整业务资源 |
 | **B. 核心** | handler + biz + store + model | 4 | 最小可运行 |
 | **C. flag 控制** | 默认 B，`--with conversion,validation,proto` 添加 | 4-9 | 灵活 |
 
@@ -356,7 +356,7 @@ lin/docs/features/
 ├── 00-refactor-rationale.md       ✅ 当前文档（RFC）
 ├── 01-architecture-blueprint.md   ✅ 重构后的整体架构
 ├── 02-command-set.md              ✅ 6 个命令详细设计（new/add/lint/doctor/version/completion）
-├── 03-resource-scaffold.md        ✅ 资源分层（参照 miniblog-v4）
+├── 03-resource-scaffold.md        ✅ 资源分层规范
 ├── 04-template-system.md          ✅ 简化的模板系统
 ├── 05-registration-strategy.md    ✅ 资源注册策略（AST 注入）
 ├── 06-migration-plan.md           ✅ 从当前 lin → 新版的迁移步骤

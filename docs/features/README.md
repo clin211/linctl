@@ -15,7 +15,7 @@
 | 00 | [refactor-rationale.md](./00-refactor-rationale.md) | ✅ Stable | 重构 RFC：动机、定位、6 项关键决策（已确定） |
 | 01 | [architecture-blueprint.md](./01-architecture-blueprint.md) | ✅ Stable | 重构后整体架构：目录、模块、数据流、依赖 |
 | 02 | [command-set.md](./02-command-set.md) | ✅ Stable | 6 个命令详细设计（new/add/lint/doctor/version/completion） |
-| 03 | [resource-scaffold.md](./03-resource-scaffold.md) | ✅ Stable | 业务资源全栈分层规范（参照 miniblog-v4） |
+| 03 | [resource-scaffold.md](./03-resource-scaffold.md) | ✅ Stable | 业务资源全栈分层规范 |
 | 04 | [template-system.md](./04-template-system.md) | ✅ Stable | 简化的模板系统：embed + 外部目录覆盖 |
 | 05 | [registration-strategy.md](./05-registration-strategy.md) | ✅ Stable | 资源注册策略（AST 注入 + 锚点 + 幂等 + 事务） |
 | 06 | [migration-plan.md](./06-migration-plan.md) | ✅ Stable | 5 阶段迁移计划（17 工作日） |

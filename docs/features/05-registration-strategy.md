@@ -19,7 +19,7 @@
 | **约定式注册** | `internal/<app>/handler/post.go` | `init() + Register()` 闭包 | ❌ 无需 AST，handler 文件本身即注册 |
 | **AST 注入** | 4 个中央文件（见下表） | `dave/dst` / 文本插入 | ✅ 由 lin 自动改动 |
 
-> **handler 路由 ≠ AST 注入**：handler 通过 miniblog-v4 风格的 `init() { Register(...) }` 闭包**自注册**到全局路由表。`linctl add` 只**创建** handler 文件，**不**注入到任何中央文件。
+> **handler 路由 ≠ AST 注入**：handler 通过 三层架构风格（借鉴 DDD）的 `init() { Register(...) }` 闭包**自注册**到全局路由表。`linctl add` 只**创建** handler 文件，**不**注入到任何中央文件。
 
 ### 1.2 4 类 AST 注入
 

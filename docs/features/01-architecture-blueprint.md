@@ -40,7 +40,7 @@
        │                    │
 ┌──────┴────────────────────┴──────────────────────────────────────┐
 │                      Templates (embed.FS)                         │
-│   internal/templates/project/    miniblog-v4 风格项目骨架        │
+│   internal/templates/project/    三层架构风格（借鉴 DDD）项目骨架        │
 │   internal/templates/resource/   全栈资源骨架                    │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -84,7 +84,7 @@ lin/
 │   │   └── doctor.go               # 校验环境（go/protoc/wire/...）
 │   │
 │   ├── templates/                  # embed.FS 模板源
-│   │   ├── project/                # 项目骨架（参照 miniblog-v4）
+│   │   ├── project/                # 项目骨架（三层架构 / DDD 风格）
 │   │   │   ├── cmd/
 │   │   │   ├── internal/
 │   │   │   ├── pkg/
@@ -450,9 +450,9 @@ func (l *Loader) Load(relPath string) (*template.Template, error)
 
 ---
 
-## 8. 与 miniblog-v4 的目录映射
+## 8. 标准目录映射
 
-| miniblog-v4 路径 | 由谁生成 | 备注 |
+| 项目路径 | 由谁生成 | 备注 |
 | --- | --- | --- |
 | `cmd/<app>/main.go` | `linctl new` | 初次生成 |
 | `cmd/<app>/app/` | `linctl new` | 初次生成 |
@@ -475,7 +475,7 @@ func (l *Loader) Load(relPath string) (*template.Template, error)
 | `internal/pkg/known/` | `linctl new` | 常量定义 |
 | `internal/pkg/rid/` | `linctl new` | ID 生成 |
 | `configs/<app>.yaml` | `linctl new` | 单一应用配置（含 db section；gen-gorm-model 复用） |
-| `Makefile` / `Dockerfile` / `.golangci.yaml` | `linctl new` | 工程化（Makefile 含 `gen-model` target，与 miniblog-v4 一致） |
+| `Makefile` / `Dockerfile` / `.golangci.yaml` | `linctl new` | 工程化（Makefile 含 `gen-model` target） |
 
 ---
 

@@ -6,7 +6,7 @@
 
 ## 0. TL;DR
 
-`lin/internal/template/templates/` 下共 **226 个 `.tpl` 文件**，其中 **64% 没有任何 `{{ }}` 模板语法**——它们是从上游 `onexstack` / `miniblog-v4` vendored 过来的纯 Go 源码，挂 `.tpl` 后缀只是为了走 codegen 渲染管道。
+`lin/internal/template/templates/` 下共 **226 个 `.tpl` 文件**，其中 **64% 没有任何 `{{ }}` 模板语法**——它们是从上游 `onexstack` / `上游参考实现` vendored 过来的纯 Go 源码，挂 `.tpl` 后缀只是为了走 codegen 渲染管道。
 
 Phase 1 目标：**让这些"伪模板"回归 `.go` 形态**，IDE / `gopls` 能正确高亮、跳转、查阅；同时不影响生成产物的字节级行为。
 
@@ -27,9 +27,9 @@ Phase 1 目标：**让这些"伪模板"回归 `.go` 形态**，IDE / `gopls` 能
 ```
 github.com/onexstack/onexstack/pkg/...         (上游, 仍在迭代)
         │
-        │  ① miniblog-v4 团队 fork & 改造（go.mod 不再 require 上游）
+        │  ① `上游参考实现` 团队 fork & 改造（go.mod 不再 require 上游）
         ▼
-miniblog-v4/pkg/...                            (vendored, 离线)
+`上游参考实现`/pkg/...                            (vendored, 离线)
         │
         │  ② linctl 团队再 fork、加 .tpl 后缀
         ▼
@@ -58,10 +58,10 @@ lin/internal/template/templates/web-gin/pkg/...
 
 ### 痛点
 
-1. **升级链路断裂**：上游 onexstack 修了 bug → 需要两次手动同步（先到 miniblog-v4，再到 linctl 的 templates）。
+1. **升级链路断裂**：上游 onexstack 修了 bug → 需要两次手动同步（先到 `上游参考实现`，再到 linctl 的 templates）。
 2. **可测性退化**：`.tpl` 文件不会被 `gopls` / `go vet` / `golangci-lint` 扫到，IDE 也没语法高亮。
 3. **诊断成本高**：模板渲染失败时只能拿到行号，不像普通 Go 文件那样直接 `go build`。
-4. **隐性碎片化**：同一份 `pkg/ptr/ptr.go` 在仓库里至少存在 3 份副本（miniblog-v4 / 模板 / 历史生成产物）。
+4. **隐性碎片化**：同一份 `pkg/ptr/ptr.go` 在仓库里至少存在 3 份副本（`上游参考实现` / 模板 / 历史生成产物）。
 5. **无序 drift**：64% 的文件其实根本不需要模板化，但因为统一加了 `.tpl` 后缀，无法直观区分"需要渲染"vs"纯复制"。
 
 ## 2. 目标与非目标

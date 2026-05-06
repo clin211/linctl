@@ -1,4 +1,4 @@
-# 03. 资源骨架规范（参照 miniblog-v4）
+# 03. 资源骨架规范
 
 > **前置阅读**：[01-architecture-blueprint.md](./01-architecture-blueprint.md) §8
 >
@@ -261,7 +261,7 @@ func newPostStore(store *datastore) *postStore {
 }
 ```
 
-> **关键点**：基于 miniblog-v4 的 `genericstore.Store[T]` 泛型存储，自动获得 CRUD 默认实现，资源 `*Store` 仅做特化（如关联查询）。
+> **关键点**：基于 `genericstore.Store[T]` 泛型存储，自动获得 CRUD 默认实现，资源 `*Store` 仅做特化（如关联查询）。
 
 ---
 
@@ -303,7 +303,7 @@ func (PostM) TableName() string {
 
 #### 3.4.1 推荐工作流：搭配 `cmd/gen-gorm-model/`
 
-`linctl new` **默认生成** `cmd/gen-gorm-model/gen_gorm_model.go`（参照 [miniblog-v4](../../../miniblog-v4/cmd/gen-gorm-model/gen_gorm_model.go) 风格）：
+`linctl new` **默认生成** `cmd/gen-gorm-model/gen_gorm_model.go`（基于 GORM Gen 的标准模型生成器）：
 
 ```
 <project-root>/
@@ -407,7 +407,7 @@ db:
 gen-model: ## 反推数据库 model（覆盖 internal/<app>/model/*.gen.go）
 	cd cmd/gen-gorm-model && go run .
 
-# build target 显式排除 cmd/gen-gorm-model（与 miniblog-v4 一致）
+# build target 显式排除 cmd/gen-gorm-model（避免被打入业务二进制）
 COMMANDS ?= $(filter-out $(PROJ_ROOT_DIR)/cmd/gen-gorm-model, \
                           $(filter-out %.md, $(wildcard $(PROJ_ROOT_DIR)/cmd/*)))
 ```
@@ -826,9 +826,9 @@ linctl add Post Comment Tag
 
 ---
 
-## 9. 与 miniblog-v4 的差异
+## 9. 设计取舍与简化说明
 
-| 维度 | miniblog-v4 实际 | linctl 生成 | 备注 |
+| 维度 | 完整生产实现 | linctl 生成 | 备注 |
 | --- | --- | --- | --- |
 | biz/v1 子目录命名 | `user/` | `post/` | 一致：lowercase |
 | biz 接口命名 | `UserBiz` | `PostBiz` | 一致：PascalCase + Biz |

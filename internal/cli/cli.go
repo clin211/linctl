@@ -37,7 +37,7 @@ func NewRootCmd() *cobra.Command {
 
 	root := &cobra.Command{
 		Use:           "linctl",
-		Short:         "Go project scaffolder (miniblog-v4 style)",
+		Short:         "Go project scaffolder (layered architecture inspired by DDD)",
 		Long: `linctl is a minimal scaffold generator for Go backend services.
 
 It does exactly two things:

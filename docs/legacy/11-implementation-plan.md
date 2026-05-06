@@ -671,7 +671,7 @@ linctl 与 osbuilder 在生态上**并存**而非"颠覆"：
 | 2026-04-26 | 0.2.0 | Phase 2 全部 Story 完成（proto AST + snapshot + strategy/drift + errors）；Phase 3 Story 3.1（gRPC 第一波）+ 3.2（Worker 第一波）完成 |
 | 2026-04-26 | 0.2.1 | 删除 `partials/header.tpl`（"DO NOT EDIT" 与 hash drift 设计哲学冲突）；17 个内置模板不再注入文件头注释，溯源仅依赖文件末尾的 `// linctl: hash=...` |
 | 2026-04-26 | 0.2.2 | 彻底移除 `templates/partials/` 共享片段机制：删除 `Engine.WithPartialsDir` Option / `partialsDir` 字段 / `init()` 中的 ParseFS 加载逻辑 / `lookupOrParse` 中的 Clone 逻辑；删除原 §5.9 partial 子小节；引擎实现行数减半，命名空间冲突风险归零 |
-| 2026-04-26 | 0.2.3 | `framework=gin` 默认开启 web-gin 风格项目级骨架（对齐 `miniblog-v4`，阶段 1）：新增 11 个内置模板（`templates/web-gin/internal/pkg/{contextx,known,errno}/*` + `templates/web-gin/pkg/errorsx/*`），由 `WebServer.BasePairs` 通过 `webGinPkgPairs()` 在 `framework=gin` 分支自动追加；`go.mod.tpl` 同步引入 `google.golang.org/grpc` + `google.golang.org/genproto/googleapis/rpc`（errorsx 依赖）；新增 `TestGolden_WebGinPkgTemplates` snapshot 测试覆盖全部 11 个模板 |
+| 2026-04-26 | 0.2.3 | `framework=gin` 默认开启 web-gin 风格项目级骨架（对齐 `上游参考实现`，阶段 1）：新增 11 个内置模板（`templates/web-gin/internal/pkg/{contextx,known,errno}/*` + `templates/web-gin/pkg/errorsx/*`），由 `WebServer.BasePairs` 通过 `webGinPkgPairs()` 在 `framework=gin` 分支自动追加；`go.mod.tpl` 同步引入 `google.golang.org/grpc` + `google.golang.org/genproto/googleapis/rpc`（errorsx 依赖）；新增 `TestGolden_WebGinPkgTemplates` snapshot 测试覆盖全部 11 个模板 |
 | 2026-04-27 | 0.2.4 | 整体移除 `lin/tests/snapshot/` 目录（含 Story 2.4 的 `template_snapshot_test.go` / `helper_test.go` / `golden/` 全部 7 套子集）；同步删除 `docs/05-template-system.md` §5.11、`docs/12-testing-strategy.md` §12.5（含 §12.1 信仰表与 §12.2 金字塔图脚注中的 snapshot 提及）、`docs/99-glossary.md` 的 Snapshot Test / Golden File 词条，以及 `Makefile` 示例中的 `test-snapshot` / `test-snapshot-update` 目标；Story 2.4 标记为已废弃 |
 
 ---

@@ -79,7 +79,7 @@ require (
 $ linctl new
    ┌────────────────────────────────────────────┐
    │   ✨ linctl - Go Project Scaffolder         │
-   │   v0.1.0-alpha  ·  miniblog-v4 style        │
+   │   v0.1.0-alpha  ·  layered architecture (inspired by DDD)        │
    └────────────────────────────────────────────┘
 
   Welcome! Let's craft your project.

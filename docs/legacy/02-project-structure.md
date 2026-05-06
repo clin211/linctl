@@ -656,7 +656,7 @@ templates/
 
 ### 2.3.1 web-gin 风格项目级骨架（v0.2.3 起 framework=gin 默认开启）
 
-为对齐 `osbuilder-demo/miniblog-v4` 的企业级架构，`framework=gin` 的 WebServer 组件会通过 `WebServer.BasePairs()` → `webGinPkgPairs()` 自动追加项目级（不带组件名）骨架文件：
+为对齐 ``上游参考实现` 的企业级架构，`framework=gin` 的 WebServer 组件会通过 `WebServer.BasePairs()` → `webGinPkgPairs()` 自动追加项目级（不带组件名）骨架文件：
 
 ```
 templates/web-gin/
