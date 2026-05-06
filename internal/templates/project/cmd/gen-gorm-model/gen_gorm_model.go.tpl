@@ -1,8 +1,3 @@
-// Command gen-gorm-model generates GORM model code from the database schema.
-//
-// Usage:
-//
-//	go run ./cmd/gen-gorm-model [flags]
 package main
 
 import (
@@ -38,9 +33,9 @@ func generate() {
 		FieldNullable: true,
 	})
 
-	// TODO: configure database connection and call g.UseDB(db)
-	// TODO: call g.GenerateModel("table_name") for each table
-	// TODO: call g.Execute()
+	// TODO：配置数据库连接并调用 g.UseDB(db)
+	// TODO：为每张表调用 g.GenerateModel("table_name")
+	// TODO：调用 g.Execute()
 	_ = g
 	log.Println("TODO: configure gen-gorm-model for {{.Module}}")
 }

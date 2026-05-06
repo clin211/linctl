@@ -10,34 +10,34 @@ import (
 {{- end}}
 )
 
-// IStore defines the methods that the store layer needs to implement.
+// IStore 定义 store 层需要实现的方法集。
 //
-// `linctl add <Resource>` appends new methods to this interface via AST.
+// `linctl add <Resource>` 通过 AST 向该接口追加新方法。
 type IStore interface {
 {{- if and (ne .Storage "memory") (ne .Storage "mongo")}}
-	// DB returns the underlying *gorm.DB for direct access when needed.
+	// DB 返回底层的 *gorm.DB，用于在需要时直接访问。
 	DB(ctx context.Context, wheres ...where.Where) *gorm.DB
-	// TX executes fn inside a database transaction.
+	// TX 在数据库事务中执行 fn。
 	TX(ctx context.Context, fn func(ctx context.Context) error) error
 {{- end}}
 }
 
 var (
 	once sync.Once
-	// S is the package-level store singleton.
+	// S 是包级别的 store 单例。
 	S IStore
 )
 
 {{- if or (eq .Storage "memory") (eq .Storage "mongo")}}
-// memoryStore is an in-memory implementation of IStore.
+// memoryStore 是 IStore 的内存实现。
 type memoryStore struct {
 	mu sync.RWMutex
 }
 
-// Ensure memoryStore implements IStore.
+// 确保 memoryStore 实现了 IStore 接口。
 var _ IStore = (*memoryStore)(nil)
 
-// NewStore creates (or returns) the singleton in-memory store.
+// NewStore 创建（或返回）单例的内存 store。
 func NewStore() IStore {
 	once.Do(func() {
 		S = &memoryStore{}
@@ -45,18 +45,18 @@ func NewStore() IStore {
 	return S
 }
 {{- else}}
-// transactionKey is the context key for storing an active *gorm.DB transaction.
+// transactionKey 是用于在 context 中存储活动 *gorm.DB 事务的 key。
 type transactionKey struct{}
 
-// datastore is the gorm-backed implementation of IStore.
+// datastore 是基于 gorm 的 IStore 实现。
 type datastore struct {
 	core *gorm.DB
 }
 
-// Ensure datastore implements IStore.
+// 确保 datastore 实现了 IStore 接口。
 var _ IStore = (*datastore)(nil)
 
-// NewStore creates (or returns) the singleton datastore.
+// NewStore 创建（或返回）单例的 datastore。
 func NewStore(db *gorm.DB) *datastore {
 	once.Do(func() {
 		S = &datastore{core: db}
@@ -64,7 +64,7 @@ func NewStore(db *gorm.DB) *datastore {
 	return S.(*datastore)
 }
 
-// DB returns a *gorm.DB scoped to the context (transaction-aware) and filtered by wheres.
+// DB 返回与 context 绑定（事务感知）并应用 wheres 过滤的 *gorm.DB。
 func (ds *datastore) DB(ctx context.Context, wheres ...where.Where) *gorm.DB {
 	d := ds.core
 	if tx, ok := ctx.Value(transactionKey{}).(*gorm.DB); ok {
@@ -76,7 +76,7 @@ func (ds *datastore) DB(ctx context.Context, wheres ...where.Where) *gorm.DB {
 	return d
 }
 
-// TX runs fn inside a gorm transaction.
+// TX 在 gorm 事务中执行 fn。
 func (ds *datastore) TX(ctx context.Context, fn func(ctx context.Context) error) error {
 	return ds.core.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		return fn(context.WithValue(ctx, transactionKey{}, tx))

@@ -30,7 +30,7 @@ require (
 {{- end}}
 )
 
-// linhub provides shared backend utilities (core/log/errorsx/store/db/...).
-// During local development, point to the in-repo source.
-// Once linhub is published to a Git tag, you can delete this replace.
+// linhub 提供共享的后端基础能力（core/log/errorsx/store/db/...）。
+// 本地开发时，replace 指向仓库内源码。
+// 待 linhub 发布 Git tag 后可删除此 replace。
 replace github.com/clin211/linhub => ../linhub

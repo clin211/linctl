@@ -1,24 +1,24 @@
-# Binaries for programs and plugins
+# 程序与插件二进制
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
 
-# Test binary, built with `go test -c`
+# 通过 `go test -c` 构建出的测试二进制
 *.test
 
-# Output of the go coverage tool, specifically when used with LCov
+# go coverage 工具的输出（尤其是配合 LCov 使用时）
 *.out
 
-# Dependency directories (use module caches instead)
+# 依赖目录（推荐使用 module cache 替代）
 vendor/
 
-# Go workspace file
+# Go workspace 文件
 go.work
 go.work.sum
 
-# Build output
+# 构建产物
 _output/
 
 # IDE
@@ -31,14 +31,14 @@ _output/
 # macOS
 .DS_Store
 
-# Environment files
+# 环境变量文件
 .env
 .env.*
 !.env.example
 
-# Config with secrets
+# 含密钥的配置
 configs/*.local.yaml
 configs/*.secret.yaml
 
-# Log files
+# 日志文件
 *.log

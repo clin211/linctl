@@ -4,7 +4,7 @@ ARG GO_VERSION={{.GoVersion}}
 ARG OS=linux
 ARG ARCH=amd64
 
-# -- Builder stage --
+# -- 构建阶段 --
 FROM golang:${GO_VERSION} AS builder
 ENV GOTOOLCHAIN=auto
 ARG GOPROXY=https://goproxy.cn,direct
@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go build -o /app/{{.AppName}} {{.Module}}/cmd/{{.AppName}}
 
-# -- Runtime stage --
+# -- 运行阶段 --
 FROM scratch AS runtime
 WORKDIR /app
 COPY --from=builder /app/{{.AppName}} /app/{{.AppName}}

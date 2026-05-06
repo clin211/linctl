@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# boot.sh — quick local bootstrap for {{.ProjectName}}
+# boot.sh — {{.ProjectName}} 的本地快速启动脚本
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

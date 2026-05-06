@@ -1,4 +1,3 @@
-// Package cache provides optional in-process BigCache (github.com/allegro/bigcache/v3).
 package cache
 
 import (
@@ -15,14 +14,14 @@ var (
 	bc   *bigcache.BigCache
 )
 
-// Local returns the BigCache instance, or nil if InitBigCache was not called.
+// Local 返回 BigCache 实例；若未调用 InitBigCache 则返回 nil。
 func Local() *bigcache.BigCache {
 	bcMu.RLock()
 	defer bcMu.RUnlock()
 	return bc
 }
 
-// InitBigCache builds BigCache from viper keys under bigcache.* (see the generated app YAML).
+// InitBigCache 根据 viper 中 bigcache.* 下的配置项构建 BigCache（详见生成的应用 YAML）。
 func InitBigCache() error {
 	life := viper.GetDuration("bigcache.life-window")
 	if life <= 0 {
@@ -57,7 +56,7 @@ func InitBigCache() error {
 	return nil
 }
 
-// CloseBigCache resets the global BigCache.
+// CloseBigCache 重置全局 BigCache。
 func CloseBigCache() error {
 	bcMu.Lock()
 	defer bcMu.Unlock()

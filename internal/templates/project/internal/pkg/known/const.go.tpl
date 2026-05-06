@@ -1,27 +1,24 @@
-// Package known defines well-known constants for {{.AppName | Title}}.
-//
-// Prefer github.com/clin211/linhub/errx for standard HTTP header names used across linhub/core.
 package known
 
 import "github.com/clin211/linhub/errx"
 
-// HTTP header constants (aligned with linhub errx / core).
+// HTTP 头常量（与 linhub errx / core 保持一致）。
 const (
-	// XRequestID is the header name for the unique request ID.
+	// XRequestID 是唯一请求 ID 的 HTTP 头名称。
 	XRequestID = errx.HeaderRequestID
 
-	// XUserID is the header name for the authenticated user ID.
+	// XUserID 是已认证用户 ID 的 HTTP 头名称。
 	XUserID = "x-user-id"
 
-	// XUsername is the header name for the authenticated username.
+	// XUsername 是已认证用户名的 HTTP 头名称。
 	XUsername = "x-username"
 )
 
-// Application constants.
+// 应用级常量。
 const (
-	// AdminUsername is the default admin user.
+	// AdminUsername 是默认管理员用户名。
 	AdminUsername = "root"
 
-	// MaxErrGroupConcurrency limits goroutine concurrency in errgroup.
+	// MaxErrGroupConcurrency 限制 errgroup 中的 goroutine 并发数。
 	MaxErrGroupConcurrency = 1000
 )

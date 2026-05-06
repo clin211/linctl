@@ -12,7 +12,7 @@ import (
 
 {{- if eq .Storage "memory"}}
 
-// {{.Resource | Pascal}}Store defines the store methods for {{.Resource | Pascal}} (in-memory).
+// {{.Resource | Pascal}}Store 定义 {{.Resource | Pascal}} 的 store 方法集（内存版）。
 type {{.Resource | Pascal}}Store interface {
 	Create(ctx context.Context, obj *model.{{.Resource | Pascal}}M) error
 	Update(ctx context.Context, obj *model.{{.Resource | Pascal}}M) error
@@ -21,38 +21,38 @@ type {{.Resource | Pascal}}Store interface {
 	List(ctx context.Context, offset, limit int64) (int64, []*model.{{.Resource | Pascal}}M, error)
 }
 
-// {{.Resource | LowerCamel}}Store is the in-memory implementation of {{.Resource | Pascal}}Store.
+// {{.Resource | LowerCamel}}Store 是 {{.Resource | Pascal}}Store 的内存实现。
 type {{.Resource | LowerCamel}}Store struct {
 	items map[string]*model.{{.Resource | Pascal}}M
 }
 
-// Ensure {{.Resource | LowerCamel}}Store implements {{.Resource | Pascal}}Store.
+// 确保 {{.Resource | LowerCamel}}Store 实现了 {{.Resource | Pascal}}Store 接口。
 var _ {{.Resource | Pascal}}Store = (*{{.Resource | LowerCamel}}Store)(nil)
 
-// new{{.Resource | Pascal}}Store creates a new in-memory {{.Resource | Pascal}}Store.
+// new{{.Resource | Pascal}}Store 创建一个新的内存版 {{.Resource | Pascal}}Store。
 func new{{.Resource | Pascal}}Store(_ *memoryStore) *{{.Resource | LowerCamel}}Store {
 	return &{{.Resource | LowerCamel}}Store{items: make(map[string]*model.{{.Resource | Pascal}}M)}
 }
 
-// Create stores a {{.Resource | Pascal}} in memory.
+// Create 将 {{.Resource | Pascal}} 写入内存。
 func (s *{{.Resource | LowerCamel}}Store) Create(_ context.Context, obj *model.{{.Resource | Pascal}}M) error {
 	s.items[obj.{{.Resource | Pascal}}ID] = obj
 	return nil
 }
 
-// Update replaces a {{.Resource | Pascal}} in memory.
+// Update 替换内存中的 {{.Resource | Pascal}}。
 func (s *{{.Resource | LowerCamel}}Store) Update(_ context.Context, obj *model.{{.Resource | Pascal}}M) error {
 	s.items[obj.{{.Resource | Pascal}}ID] = obj
 	return nil
 }
 
-// Delete removes a {{.Resource | Pascal}} from memory by ID.
+// Delete 按 ID 从内存中移除 {{.Resource | Pascal}}。
 func (s *{{.Resource | LowerCamel}}Store) Delete(_ context.Context, id string) error {
 	delete(s.items, id)
 	return nil
 }
 
-// Get retrieves a single {{.Resource | Pascal}} from memory by ID.
+// Get 按 ID 从内存中读取单个 {{.Resource | Pascal}}。
 func (s *{{.Resource | LowerCamel}}Store) Get(_ context.Context, id string) (*model.{{.Resource | Pascal}}M, error) {
 	v, ok := s.items[id]
 	if !ok {
@@ -61,7 +61,7 @@ func (s *{{.Resource | LowerCamel}}Store) Get(_ context.Context, id string) (*mo
 	return v, nil
 }
 
-// List retrieves all {{.Resource | Pascal}} entries with simple pagination.
+// List 以简单分页方式返回内存中所有 {{.Resource | Pascal}}。
 func (s *{{.Resource | LowerCamel}}Store) List(_ context.Context, offset, limit int64) (int64, []*model.{{.Resource | Pascal}}M, error) {
 	all := make([]*model.{{.Resource | Pascal}}M, 0, len(s.items))
 	for _, v := range s.items {
@@ -81,7 +81,7 @@ func (s *{{.Resource | LowerCamel}}Store) List(_ context.Context, offset, limit 
 
 {{- else}}
 
-// {{.Resource | Pascal}}Store defines the store methods for {{.Resource | Pascal}}.
+// {{.Resource | Pascal}}Store 定义 {{.Resource | Pascal}} 的 store 方法集。
 type {{.Resource | Pascal}}Store interface {
 	Create(ctx context.Context, obj *model.{{.Resource | Pascal}}M) error
 	Update(ctx context.Context, obj *model.{{.Resource | Pascal}}M) error
@@ -90,15 +90,15 @@ type {{.Resource | Pascal}}Store interface {
 	List(ctx context.Context, opts *where.Options) (int64, []*model.{{.Resource | Pascal}}M, error)
 }
 
-// {{.Resource | LowerCamel}}Store is the gorm-backed implementation of {{.Resource | Pascal}}Store.
+// {{.Resource | LowerCamel}}Store 是基于 gorm 的 {{.Resource | Pascal}}Store 实现。
 type {{.Resource | LowerCamel}}Store struct {
 	*genericstore.Store[model.{{.Resource | Pascal}}M]
 }
 
-// Ensure {{.Resource | LowerCamel}}Store implements {{.Resource | Pascal}}Store.
+// 确保 {{.Resource | LowerCamel}}Store 实现了 {{.Resource | Pascal}}Store 接口。
 var _ {{.Resource | Pascal}}Store = (*{{.Resource | LowerCamel}}Store)(nil)
 
-// new{{.Resource | Pascal}}Store creates a new gorm-backed {{.Resource | Pascal}}Store.
+// new{{.Resource | Pascal}}Store 创建一个新的 gorm 版 {{.Resource | Pascal}}Store。
 func new{{.Resource | Pascal}}Store(store *datastore) *{{.Resource | LowerCamel}}Store {
 	return &{{.Resource | LowerCamel}}Store{
 		Store: genericstore.NewStore[model.{{.Resource | Pascal}}M](store, nil),

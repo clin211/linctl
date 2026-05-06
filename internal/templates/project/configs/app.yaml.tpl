@@ -1,8 +1,8 @@
 server:
   http:
-    addr: 0.0.0.0:8080  # HTTP listen address
+    addr: 0.0.0.0:8080  # HTTP 监听地址
 
-timeout: 30s  # Server request timeout
+timeout: 30s  # 服务端请求超时
 {{- if eq .Storage "gorm-postgres"}}
 
 postgresql:
@@ -68,7 +68,7 @@ bigcache:
   max-entries-in-window: 1000000
   max-entry-size: 500
   verbose: false
-  hard-max-cache-size-mb: 0  # 0 = no hard limit
+  hard-max-cache-size-mb: 0  # 0 表示不设硬上限
 {{- end}}
 {{- if .Features | Has "otel"}}
 

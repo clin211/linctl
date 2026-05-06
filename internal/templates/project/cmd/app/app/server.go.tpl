@@ -38,7 +38,7 @@ const (
 
 var configFile string
 
-// NewWebServerCommand creates the root cobra command for the application.
+// NewWebServerCommand 创建应用程序的 cobra 根命令。
 func NewWebServerCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "{{.AppName}}",
@@ -63,7 +63,7 @@ func run(ctx context.Context) error {
 		addr = ":8080"
 	}
 
-	// Initialize store
+	// 初始化 store
 {{- if eq .Storage "memory"}}
 	s := store.NewStore()
 {{- else if eq .Storage "mongo"}}
@@ -71,7 +71,7 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("mongodb init: %w", err)
 	}
 	defer func() { _ = dbpkg.CloseMongo() }()
-	// Domain store is in-memory; use dbpkg.MongoClient() for MongoDB until resources support it.
+	// 业务 store 暂为内存实现；在资源层支持 MongoDB 之前，可使用 dbpkg.MongoClient() 直连 MongoDB。
 	s := store.NewStore()
 {{- else}}
 	dbInstance, err := dbpkg.OpenGORM("{{.Storage}}")
@@ -93,11 +93,11 @@ func run(ctx context.Context) error {
 	defer func() { _ = cache.CloseBigCache() }()
 {{- end}}
 
-	// Wire up dependencies
+	// 注入依赖
 	b := biz.NewBiz(s)
 	h := handler.NewHandler(b)
 
-	// Set up gin router
+	// 配置 gin 路由
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.RequestID())
@@ -105,7 +105,7 @@ func run(ctx context.Context) error {
 	v1 := r.Group("/v1")
 	h.InstallAll(v1)
 
-	// Create HTTP server
+	// 创建 HTTP 服务器
 	srv := &http.Server{
 		Addr:         addr,
 		Handler:      r,
@@ -113,7 +113,7 @@ func run(ctx context.Context) error {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	// Start server in background
+	// 后台启动服务器
 	go func() {
 		log.Infow("Starting server", "addr", addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -121,7 +121,7 @@ func run(ctx context.Context) error {
 		}
 	}()
 
-	// Wait for shutdown signal
+	// 等待关停信号
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 

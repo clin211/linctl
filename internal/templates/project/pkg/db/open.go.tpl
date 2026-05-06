@@ -1,4 +1,3 @@
-// Package db opens the primary SQL database via github.com/clin211/linhub/db (GORM).
 package db
 
 import (
@@ -10,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// OpenGORM returns *gorm.DB for the configured storage backend (see scaffold --storage).
+// OpenGORM 根据指定的存储后端返回对应的 *gorm.DB（取值与 scaffold --storage 保持一致）。
 func OpenGORM(storage string) (*gorm.DB, error) {
 	switch storage {
 	case "gorm-postgres":

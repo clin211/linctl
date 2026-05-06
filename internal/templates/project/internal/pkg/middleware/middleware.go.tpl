@@ -1,4 +1,3 @@
-// Package middleware provides gin HTTP middleware for {{.AppName | Title}}.
 package middleware
 
 import (
@@ -10,8 +9,8 @@ import (
 	"{{.Module}}/internal/pkg/contextx"
 )
 
-// RequestID injects a unique request ID into each request context and response header.
-// Header name matches github.com/clin211/linhub/core (errx.HeaderRequestID).
+// RequestID 为每个请求注入唯一的请求 ID 到上下文与响应头中。
+// 请求头名称与 github.com/clin211/linhub/core 中的 errx.HeaderRequestID 保持一致。
 func RequestID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requestID := c.Request.Header.Get(errx.HeaderRequestID)

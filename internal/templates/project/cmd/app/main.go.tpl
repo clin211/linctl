@@ -6,7 +6,7 @@ import (
 	"{{.Module}}/cmd/{{.AppName}}/app"
 )
 
-// main is the default entry point of the application.
+// main 是应用程序的默认入口。
 func main() {
 	command := app.NewWebServerCommand()
 	if err := command.Execute(); err != nil {

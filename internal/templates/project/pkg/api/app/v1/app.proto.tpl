@@ -22,17 +22,17 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   produces: "application/json";
 };
 
-// {{.AppName | Title | Plural}}Service defines the {{.AppName | Title}} API.
+// {{.AppName | Title | Plural}}Service 定义 {{.AppName | Title}} API。
 service {{.AppName | Pascal}}Service {
 }
 
-// HealthzRequest is the request message for the Healthz RPC.
+// HealthzRequest 是 Healthz RPC 的请求消息。
 message HealthzRequest {}
 
-// HealthzResponse is the response message for the Healthz RPC.
+// HealthzResponse 是 Healthz RPC 的响应消息。
 message HealthzResponse {
-  // status is the service health status.
+  // status 表示服务的健康状态。
   string status = 1;
-  // timestamp is the current server time.
+  // timestamp 为当前服务器时间。
   string timestamp = 2;
 }

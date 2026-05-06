@@ -1,4 +1,3 @@
-// Package errno defines application-level error codes and error variables.
 package errno
 
 import (
@@ -7,21 +6,21 @@ import (
 	"net/http"
 )
 
-// BizError represents a business-level error with a code, reason, and message.
+// BizError 表示带有业务错误码、原因与消息的业务级错误。
 type BizError struct {
-	// HTTP status code
+	// HTTP 状态码
 	HTTPCode int
-	// Machine-readable error code (e.g. 100001)
+	// 机器可读的业务错误码（如 100001）
 	Code int
-	// Human-readable reason (e.g. "User.NotFound")
+	// 机器可读的原因（如 "User.NotFound"）
 	Reason string
-	// Human-readable message
+	// 人类可读的消息
 	Message string
-	// Optional details
+	// 可选的详细信息
 	Details string
 }
 
-// Error implements the error interface.
+// Error 实现 error 接口。
 func (e *BizError) Error() string {
 	if e.Details != "" {
 		return fmt.Sprintf("[%d] %s: %s (%s)", e.Code, e.Reason, e.Message, e.Details)
@@ -29,14 +28,14 @@ func (e *BizError) Error() string {
 	return fmt.Sprintf("[%d] %s: %s", e.Code, e.Reason, e.Message)
 }
 
-// WithDetails returns a copy of the error with additional details.
+// WithDetails 返回一个附带额外 details 的 BizError 副本。
 func (e *BizError) WithDetails(details string) *BizError {
 	cp := *e
 	cp.Details = details
 	return &cp
 }
 
-// New creates a new BizError.
+// New 创建一个新的 BizError。
 func New(httpCode, code int, reason, message string) *BizError {
 	return &BizError{
 		HTTPCode: httpCode,
@@ -46,7 +45,7 @@ func New(httpCode, code int, reason, message string) *BizError {
 	}
 }
 
-// FromError converts a standard error into a BizError (using ErrInternal as fallback).
+// FromError 将标准 error 转换为 BizError（无法识别时回退为 ErrInternal）。
 func FromError(err error) *BizError {
 	if err == nil {
 		return nil
@@ -58,7 +57,7 @@ func FromError(err error) *BizError {
 	return ErrInternal.WithDetails(err.Error())
 }
 
-// Standard errors.
+// 标准错误集合。
 var (
 	ErrInternal          = New(http.StatusInternalServerError, 500001, "Internal.ServerError", "Internal server error.")
 	ErrNotFound          = New(http.StatusNotFound, 404001, "NotFound.Resource", "Resource not found.")

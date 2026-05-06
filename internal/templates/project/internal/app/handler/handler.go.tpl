@@ -6,28 +6,28 @@ import (
 	"{{.Module}}/internal/{{.AppName}}/biz"
 )
 
-// Handler holds the dependencies for HTTP handlers.
+// Handler 持有 HTTP handler 所需的依赖。
 type Handler struct {
 	biz biz.IBiz
 }
 
-// Registrar is a function that registers routes on a gin RouterGroup.
+// Registrar 是向 gin RouterGroup 注册路由的函数类型。
 type Registrar func(v1 *gin.RouterGroup, h *Handler)
 
 var registrars []Registrar
 
-// NewHandler creates a new Handler instance.
+// NewHandler 创建一个 Handler 实例。
 func NewHandler(biz biz.IBiz) *Handler {
 	return &Handler{biz: biz}
 }
 
-// Register adds a Registrar to the global list.
-// Called from init() functions in each handler file.
+// Register 将一个 Registrar 追加到全局列表。
+// 由各 handler 文件的 init() 函数调用。
 func Register(r Registrar) {
 	registrars = append(registrars, r)
 }
 
-// InstallAll installs all registered routes on the given RouterGroup.
+// InstallAll 将所有已注册的路由挂载到给定的 RouterGroup 上。
 func (h *Handler) InstallAll(v1 *gin.RouterGroup) {
 	for _, r := range registrars {
 		r(v1, h)

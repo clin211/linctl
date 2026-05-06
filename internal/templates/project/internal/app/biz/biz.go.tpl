@@ -4,21 +4,21 @@ import (
 	"{{.Module}}/internal/{{.AppName}}/store"
 )
 
-// IBiz defines the methods that must be implemented by the business layer.
+// IBiz 定义业务层必须实现的方法集。
 //
-// `linctl add <Resource>` appends new methods to this interface via AST.
+// `linctl add <Resource>` 通过 AST 向该接口追加新方法。
 type IBiz interface {
 }
 
-// biz is the concrete implementation of IBiz.
+// biz 是 IBiz 的具体实现。
 type biz struct {
 	store store.IStore
 }
 
-// Ensure biz implements IBiz.
+// 确保 biz 实现了 IBiz 接口。
 var _ IBiz = (*biz)(nil)
 
-// NewBiz creates a new IBiz instance.
+// NewBiz 创建一个 IBiz 实例。
 func NewBiz(s store.IStore) *biz {
 	return &biz{store: s}
 }

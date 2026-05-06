@@ -14,7 +14,7 @@ func init() {
 	})
 }
 
-// Healthz returns the service health status.
+// Healthz 返回服务健康状态。
 func (h *Handler) Healthz(c *gin.Context) {
 	log.W(c.Request.Context()).Infow("Healthz called", "status", "healthy")
 	c.JSON(http.StatusOK, gin.H{

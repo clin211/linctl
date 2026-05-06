@@ -1,8 +1,3 @@
-// Package db provides MongoDB connectivity via github.com/clin211/linhub/options.
-//
-// The default store layer for mongo-backed projects is still the in-memory scaffold
-// (same as --storage memory) until linctl resource templates support MongoDB natively.
-// Use MongoClient() for custom persistence against the configured cluster.
 package db
 
 import (
@@ -20,14 +15,14 @@ var (
 	mongoClient *mongo.Client
 )
 
-// MongoClient returns the initialized *mongo.Client, or nil if InitMongo was not called.
+// MongoClient 返回已初始化的 *mongo.Client；若未调用 InitMongo 则返回 nil。
 func MongoClient() *mongo.Client {
 	mongoMu.RLock()
 	defer mongoMu.RUnlock()
 	return mongoClient
 }
 
-// InitMongo connects using viper keys under mongo.* (see the generated app YAML).
+// InitMongo 根据 viper 中 mongo.* 下的配置项建立 MongoDB 连接（详见生成的应用 YAML）。
 func InitMongo() error {
 	mo := options.NewMongoOptions()
 	mo.URL = viper.GetString("mongo.url")
@@ -59,7 +54,7 @@ func InitMongo() error {
 	return nil
 }
 
-// CloseMongo disconnects the global MongoDB client.
+// CloseMongo 断开全局 MongoDB 客户端连接。
 func CloseMongo() error {
 	mongoMu.Lock()
 	defer mongoMu.Unlock()

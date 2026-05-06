@@ -1,6 +1,6 @@
-# Normalize line endings to LF on checkin and checkout.
+# 检入与检出时统一为 LF 行尾。
 * text=auto eol=lf
 
-# Windows batch files use CRLF.
+# Windows 批处理脚本使用 CRLF。
 *.bat eol=crlf
 *.cmd eol=crlf

@@ -1,4 +1,3 @@
-// Package cache provides optional Redis connectivity (github.com/clin211/linhub/db).
 package cache
 
 import (
@@ -14,14 +13,14 @@ var (
 	rdb   *redis.Client
 )
 
-// RDB returns the initialized Redis client, or nil if InitRedis was not called.
+// RDB 返回已初始化的 Redis 客户端；若未调用 InitRedis 则返回 nil。
 func RDB() *redis.Client {
 	rdbMu.RLock()
 	defer rdbMu.RUnlock()
 	return rdb
 }
 
-// InitRedis connects using viper keys: redis.addr, redis.password, redis.db, plus optional pool knobs.
+// InitRedis 根据 viper 中的配置项（redis.addr / redis.password / redis.db 以及可选的连接池参数）建立连接。
 func InitRedis() error {
 	opts := &db.RedisOptions{
 		Addr:         viper.GetString("redis.addr"),
@@ -48,7 +47,7 @@ func InitRedis() error {
 	return nil
 }
 
-// CloseRedis closes the global Redis client.
+// CloseRedis 关闭全局 Redis 客户端。
 func CloseRedis() error {
 	rdbMu.Lock()
 	defer rdbMu.Unlock()
