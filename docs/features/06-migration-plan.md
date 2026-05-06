@@ -284,7 +284,7 @@ go list -m all | tail -n +2 | head -20 | wc -l
 
 # 5) 二进制大小
 go build -ldflags "-s -w" -o /tmp/linctl .
-ls -lh /tmp/lin
+ls -lh /tmp/linctl
 # 期望: ≤ 6 MB
 ```
 
@@ -446,18 +446,18 @@ jobs:
 ### 12.2 用户项目 CI 示例（用 `linctl lint`）
 
 ```yaml
-# <user-project>/.github/workflows/lin-check.yml
-name: lin scaffold check
+# <user-project>/.github/workflows/linctl-check.yml
+name: linctl scaffold check
 on: [pull_request]
 
 jobs:
-  lin-lint:
+  linctl-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install linctl
         run: |
-          curl -sSL https://github.com/<org>/lin/releases/latest/download/linctl-linux-amd64 \
+          curl -sSL https://github.com/<org>/linctl/releases/latest/download/linctl-linux-amd64 \
             -o /usr/local/bin/linctl
           chmod +x /usr/local/bin/linctl
           linctl version
@@ -486,11 +486,11 @@ jobs:
 # .gitlab-ci.yml
 stages: [check, build]
 
-lin-check:
+linctl-check:
   stage: check
   image: golang:1.22-alpine
   script:
-    - wget -O /usr/local/bin/linctl https://gitlab.com/<org>/lin/-/releases/permalink/latest/downloads/linctl-linux-amd64
+    - wget -O /usr/local/bin/linctl https://gitlab.com/<org>/linctl/-/releases/permalink/latest/downloads/linctl-linux-amd64
     - chmod +x /usr/local/bin/linctl
     - linctl doctor --offline
     - linctl lint --report-format json | tee lint.json

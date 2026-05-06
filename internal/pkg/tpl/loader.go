@@ -4,8 +4,8 @@
 //
 // 加载优先级（高 → 低）：
 //  1. 命令行 --template-dir <abs-path>
-//  2. 项目根目录 ./.lin/templates/
-//  3. 用户目录 ~/.lin/templates/
+//  2. 项目根目录 ./.linctl/templates/
+//  3. 用户目录 ~/.linctl/templates/
 //  4. embed.FS（本仓库内 internal/templates/）
 package tpl
 
@@ -29,7 +29,7 @@ import (
 // Options 控制 Loader 的覆盖目录。
 type Options struct {
 	TemplateDir string // --template-dir 指定的绝对路径（最高优先级）
-	ProjectRoot string // 当前项目根（用于 ./.lin/templates/）
+	ProjectRoot string // 当前项目根（用于 ./.linctl/templates/）
 	EmbeddedFS  fs.FS  // 内嵌模板 FS（在 Phase 2 由 internal/templates 提供）
 }
 
@@ -54,14 +54,14 @@ func NewLoader(opts Options) (*Loader, error) {
 	}
 
 	if opts.ProjectRoot != "" {
-		p := filepath.Join(opts.ProjectRoot, ".lin", "templates")
+		p := filepath.Join(opts.ProjectRoot, ".linctl", "templates")
 		if info, err := os.Stat(p); err == nil && info.IsDir() {
 			dirs = append(dirs, p)
 		}
 	}
 
 	if home, err := os.UserHomeDir(); err == nil {
-		p := filepath.Join(home, ".lin", "templates")
+		p := filepath.Join(home, ".linctl", "templates")
 		if info, err := os.Stat(p); err == nil && info.IsDir() {
 			dirs = append(dirs, p)
 		}

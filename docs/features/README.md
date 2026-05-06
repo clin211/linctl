@@ -57,7 +57,7 @@
 | §5.1 工具边界 | B. 极简 + lint/doctor | 命令集：new / add / lint / doctor / version / completion |
 | §5.2 资源注册策略 | B. AST 注入 | 保留 ast 模块；自动改 biz.go / store.go / proto / errno |
 | §5.3 资源完整度 | A. 全栈 | 默认生成 13 文件 + 4 注入 |
-| §5.4 模板可定制性 | B. 外部目录覆盖 | `--template-dir` + `.lin/templates/` + `~/.lin/templates/` |
+| §5.4 模板可定制性 | B. 外部目录覆盖 | `--template-dir` + `.linctl/templates/` + `~/.linctl/templates/` |
 | §5.5 Feature 系统 | A. 完全删除 | 模板用 `{{if eq .Storage}}` 处理变体 |
 | §5.6 配置文件 | A. 完全删除 | 元信息从 go.mod / cmd/* 推断 |
 

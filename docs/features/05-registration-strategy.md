@@ -71,7 +71,7 @@
 `linctl add Post` 的所有操作（创建 + 注入）作为单一事务：
 
 ```
-1. 创建临时备份点（.lin/.backup/<ts>/）
+1. 创建临时备份点（.linctl/.backup/<ts>/）
 2. 创建文件（顺序）
 3. 执行 AST 注入（顺序）
 4. 校验：渲染完的项目能 go build（如启用 --strict）
@@ -323,7 +323,7 @@ service MyblogService {
 ```
         ┌────────────────────────────────────┐
         │ Step 0: 创建备份                    │
-        │   .lin/.backup/<ts>/                │
+        │   .linctl/.backup/<ts>/                │
         │     biz.go  store.go  ...           │
         └─────────────────┬──────────────────┘
                           │
@@ -356,13 +356,13 @@ service MyblogService {
                             └────────────────┘
 ```
 
-### 5.1 `.lin/` 工作目录与 `.gitignore` 契约
+### 5.1 `.linctl/` 工作目录与 `.gitignore` 契约
 
-`linctl add` 在项目根创建 `.lin/` 工作目录用于事务、备份、模板缓存：
+`linctl add` 在项目根创建 `.linctl/` 工作目录用于事务、备份、模板缓存：
 
 ```
 <project-root>/
-├── .lin/
+├── .linctl/
 │   ├── .backup/<timestamp>/      # AST 注入的临时备份（成功即删，保留最近 3 次）
 │   │   ├── biz.go
 │   │   ├── store.go
@@ -376,19 +376,19 @@ service MyblogService {
 
 | 路径 | 是否进 git | `.gitignore` 规则 |
 | --- | --- | --- |
-| `.lin/.backup/` | ❌ 永远不进 | `.lin/.backup/` |
-| `.lin/.last-run.json` | ❌ 永远不进 | `.lin/.last-run.json` |
-| `.lin/templates/` | ✅ 用户决定提交（团队共享） | 不排除 |
+| `.linctl/.backup/` | ❌ 永远不进 | `.linctl/.backup/` |
+| `.linctl/.last-run.json` | ❌ 永远不进 | `.linctl/.last-run.json` |
+| `.linctl/templates/` | ✅ 用户决定提交（团队共享） | 不排除 |
 
-`linctl add` 执行前强校验：若项目 `.gitignore` 缺少 `.lin/.backup/` 行，会先自动追加（`⚠ updated .gitignore`）。
+`linctl add` 执行前强校验：若项目 `.gitignore` 缺少 `.linctl/.backup/` 行，会先自动追加（`⚠ updated .gitignore`）。
 
 ### 5.2 备份生命周期
 
 | 时机 | 动作 |
 | --- | --- |
-| 注入前 | `cp <central-file> .lin/.backup/<ts>/<central-file>` |
-| 注入成功 | `rm -rf .lin/.backup/<ts>/`（保留最近 3 次） |
-| 注入失败 | 自动从 `.lin/.backup/<ts>/` 恢复中央文件 |
+| 注入前 | `cp <central-file> .linctl/.backup/<ts>/<central-file>` |
+| 注入成功 | `rm -rf .linctl/.backup/<ts>/`（保留最近 3 次） |
+| 注入失败 | 自动从 `.linctl/.backup/<ts>/` 恢复中央文件 |
 
 ---
 
@@ -433,7 +433,7 @@ linctl add Post --no-inject
 | Windows 行尾符 (CRLF) | 解析时归一化为 LF；写入时按目标文件原行尾符保留 |
 | 文件 git untracked | 注入正常进行；用户可后续 `git add` |
 | 文件 git uncommitted（已 staged） | 注入正常；`--strict` 模式可要求工作区干净 |
-| `.lin/.backup/` 已被 git tracked | warn；提示用户检查 `.gitignore` |
+| `.linctl/.backup/` 已被 git tracked | warn；提示用户检查 `.gitignore` |
 
 ---
 

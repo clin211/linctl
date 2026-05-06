@@ -64,7 +64,7 @@ type Context struct {
 	// DryRun 为 true 时仅打印计划，不写入磁盘。
 	DryRun bool
 
-	// Force 为 true 时允许覆盖既有文件（含 .lin/.backup/<ts>/ 备份）。
+	// Force 为 true 时允许覆盖既有文件（含 .linctl/.backup/<ts>/ 备份）。
 	Force bool
 
 	// 元数据

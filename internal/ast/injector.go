@@ -180,11 +180,11 @@ func WriteFile(path string, f *dst.File) error {
 	return nil
 }
 
-// BackupFile copies src (relative to rootDir) to .lin/.backup/<ts>/<rel>.
+// BackupFile copies src (relative to rootDir) to .linctl/.backup/<ts>/<rel>.
 // Returns the backup path.
 func BackupFile(rootDir, relPath, ts string) (string, error) {
 	src := filepath.Join(rootDir, relPath)
-	dstPath := filepath.Join(rootDir, ".lin", ".backup", ts, relPath)
+	dstPath := filepath.Join(rootDir, ".linctl", ".backup", ts, relPath)
 
 	if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
 		return "", errs.Wrap(errs.CodeASTBackupFailed,
@@ -220,7 +220,7 @@ func RestoreFromBackup(backupPath, originalPath string) error {
 // CleanupBackup removes the backup directory for a given timestamp.
 // Also prunes oldest backups keeping only the 3 most recent.
 func CleanupBackup(rootDir, ts string) error {
-	backupDir := filepath.Join(rootDir, ".lin", ".backup", ts)
+	backupDir := filepath.Join(rootDir, ".linctl", ".backup", ts)
 	if err := os.RemoveAll(backupDir); err != nil && !os.IsNotExist(err) {
 		return errs.Wrap(errs.CodeASTBackupFailed,
 			fmt.Sprintf("ast: cleanup backup %s", ts), err)
@@ -236,7 +236,7 @@ func NewTimestamp() string {
 
 // pruneOldBackups keeps only the 3 most recent backup directories.
 func pruneOldBackups(rootDir string) {
-	parent := filepath.Join(rootDir, ".lin", ".backup")
+	parent := filepath.Join(rootDir, ".linctl", ".backup")
 	entries, err := os.ReadDir(parent)
 	if err != nil {
 		return

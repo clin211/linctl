@@ -54,7 +54,7 @@ func TestBackupAndRestore(t *testing.T) {
 	if err := ast.CleanupBackup(root, ts); err != nil {
 		t.Fatalf("CleanupBackup: %v", err)
 	}
-	backupDir := filepath.Join(root, ".lin", ".backup", ts)
+	backupDir := filepath.Join(root, ".linctl", ".backup", ts)
 	if _, err := os.Stat(backupDir); !os.IsNotExist(err) {
 		t.Error("backup dir should be removed after cleanup")
 	}

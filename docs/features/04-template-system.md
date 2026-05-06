@@ -33,11 +33,11 @@
 └────────────────────────────┬─────────────────────────────┘
                              │ 未传或文件不存在 ↓
 ┌──────────────────────────────────────────────────────────┐
-│  2. 项目根目录 ./.lin/templates/                           │ ← 项目级覆盖
+│  2. 项目根目录 ./.linctl/templates/                           │ ← 项目级覆盖
 └────────────────────────────┬─────────────────────────────┘
                              │ 未存在 ↓
 ┌──────────────────────────────────────────────────────────┐
-│  3. 用户目录 ~/.lin/templates/                            │ ← 用户级覆盖
+│  3. 用户目录 ~/.linctl/templates/                            │ ← 用户级覆盖
 └────────────────────────────┬─────────────────────────────┘
                              │ 未存在 ↓
 ┌──────────────────────────────────────────────────────────┐
@@ -374,12 +374,12 @@ func (s *datastore) User() UserStore { return newUserStore(s) }
 MVP 不提供 `dump` 子命令；用户通过以下任一方式获取模板基线：
 
 ```bash
-# 方式 A：从 lin 源码 clone 后复制
-git clone https://github.com/<org>/lin.git /tmp/lin
-cp -r /tmp/lin/internal/templates ./my-templates
+# 方式 A：从 linctl 源码 clone 后复制
+git clone https://github.com/<org>/linctl.git /tmp/linctl
+cp -r /tmp/linctl/internal/templates ./my-templates
 
 # 方式 B：直接 sparse-checkout 仅取 templates 目录
-git clone --depth=1 --filter=blob:none --sparse https://github.com/<org>/lin.git
+git clone --depth=1 --filter=blob:none --sparse https://github.com/<org>/linctl.git
 cd linctl && git sparse-checkout set internal/templates
 mv internal/templates ../my-templates && cd ..
 
@@ -394,19 +394,19 @@ linctl new myblog --module github.com/foo/myblog --template-dir ./my-templates
 ### 7.2 项目级覆盖
 
 ```bash
-# 在项目根目录建一个 .lin/templates/ 子目录覆盖
-mkdir -p .lin/templates/resource
-cp ~/lin-source/internal/templates/resource/handler.go.tpl \
-   .lin/templates/resource/handler.go.tpl
+# 在项目根目录建一个 .linctl/templates/ 子目录覆盖
+mkdir -p .linctl/templates/resource
+cp ~/linctl-source/internal/templates/resource/handler.go.tpl \
+   .linctl/templates/resource/handler.go.tpl
 # 修改后...
-linctl add Post   # 自动使用 .lin/templates/resource/handler.go.tpl
+linctl add Post   # 自动使用 .linctl/templates/resource/handler.go.tpl
 ```
 
 ### 7.3 用户级覆盖
 
 ```bash
 # 全局覆盖（所有项目）
-mkdir -p ~/.lin/templates
+mkdir -p ~/.linctl/templates
 # 放入团队风格的整套模板
 linctl new myblog --module github.com/foo/myblog
 ```
@@ -432,7 +432,7 @@ linctl new myblog --module github.com/foo/myblog
     With:     [conversion, validation, proto]
 
   Hint: Available functions: Pascal, Camel, Snake, Kebab, Lower, Upper, Plural, ...
-        See: lin/docs/features/04-template-system.md §5
+        See: docs/features/04-template-system.md §5
 ```
 
 ---
@@ -441,10 +441,10 @@ linctl new myblog --module github.com/foo/myblog
 
 ### 9.1 embed 路径约定
 
-模板源在仓库内位于 `lin/internal/templates/`，因此 `embed` 指令位于 `lin/internal/templates/embed.go`：
+模板源在仓库内位于 `internal/templates/`，因此 `embed` 指令位于 `internal/templates/embed.go`：
 
 ```go
-// 文件：lin/internal/templates/embed.go
+// 文件：internal/templates/embed.go
 package templates
 
 import "embed"
@@ -458,7 +458,7 @@ var FS embed.FS
 ### 9.2 Loader 实现
 
 ```go
-// 文件：lin/internal/pkg/tpl/loader.go
+// 文件：internal/pkg/tpl/loader.go
 package tpl
 
 import (
@@ -470,8 +470,8 @@ import (
     "strings"
     "text/template"
 
-    "github.com/<org>/lin/internal/templates"
-    "github.com/<org>/lin/internal/pkg/fsx"
+    "github.com/<org>/linctl/internal/templates"
+    "github.com/<org>/linctl/internal/pkg/fsx"
 )
 
 type Loader struct {
@@ -492,17 +492,17 @@ func NewLoader(opts Options) (*Loader, error) {
         }
     }
 
-    // 2. 项目级覆盖：./.lin/templates/
+    // 2. 项目级覆盖：./.linctl/templates/
     if opts.ProjectRoot != "" {
-        p := filepath.Join(opts.ProjectRoot, ".lin", "templates")
+        p := filepath.Join(opts.ProjectRoot, ".linctl", "templates")
         if info, err := os.Stat(p); err == nil && info.IsDir() {
             dirs = append(dirs, p)
         }
     }
 
-    // 3. 用户级覆盖：~/.lin/templates/
+    // 3. 用户级覆盖：~/.linctl/templates/
     if home, err := os.UserHomeDir(); err == nil {
-        p := filepath.Join(home, ".lin", "templates")
+        p := filepath.Join(home, ".linctl", "templates")
         if info, err := os.Stat(p); err == nil && info.IsDir() {
             dirs = append(dirs, p)
         }
@@ -569,7 +569,7 @@ func parseFromEmbed(relPath string) (*template.Template, error) {
 
 ### 10.1 路径穿越（Path Traversal）防护
 
-由于 `--template-dir` 与 `~/.lin/templates/` 来自用户控制，**必须**强制验证：
+由于 `--template-dir` 与 `~/.linctl/templates/` 来自用户控制，**必须**强制验证：
 
 | 校验点 | 实现 | 失败行为 |
 | --- | --- | --- |

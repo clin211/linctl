@@ -100,7 +100,7 @@
 
 ## 0.6 项目命名说明
 
-- **`linctl`**：取自项目目录 `lin/`（见 `/Users/forest/code/backend/Go/osbuilder-demo/lin`），后缀 `-ctl` 借鉴 `kubectl`/`osbuilder`/`mbctl` 的命名风格。
+- **`linctl`**：项目早期目录名为 `lin/`，后统一更名为 `linctl`；后缀 `-ctl` 借鉴 `kubectl`/`osbuilder`/`mbctl` 的命名风格。
 - 二进制名：`linctl`
 - Go module 路径建议：`github.com/<org>/linctl`
 - 配置文件名：`linctl.yaml`（项目根目录）

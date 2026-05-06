@@ -268,7 +268,7 @@ Flags:
       --dry-run               Print plan, do not write files
       --no-inject             Skip AST injection (only create new files)
       --skip-imports          Skip auto-add of import statements
-      --force                 Overwrite existing resource files (backed up to .lin/.backup/<ts>/)
+      --force                 Overwrite existing resource files (backed up to .linctl/.backup/<ts>/)
 
 Inherited from root:
       --log-level / --log-format / --no-color / --non-interactive / -y, --yes / -C, --chdir
@@ -287,7 +287,7 @@ Inherited from root:
 | `--plural` | 英语规则推断（`jinzhu/inflection`） | 仅当推断错误时使用（如 `Octopus → Octopuses`） |
 | `--no-inject` | `false` | 调试用；跳过 AST 注入但仍创建文件 |
 | `--skip-imports` | `false` | 仅在用户已手动管理 import 时使用 |
-| `--force` | `false` | 覆盖既有资源文件（备份到 `.lin/.backup/<ts>/`）；详见 §4.6 文件冲突表 |
+| `--force` | `false` | 覆盖既有资源文件（备份到 `.linctl/.backup/<ts>/`）；详见 §4.6 文件冲突表 |
 
 ### 4.4 上下文推断
 
@@ -367,7 +367,7 @@ $ linctl add Post --app=api,worker   # ❌ MVP 不支持多 app 同时注入
    a) render：scaffold/render.go 写入 12 个新文件
    b) inject：ast/injector.go 编排 4 个 mutator
       - guard 检查幂等
-      - 失败时回滚（从 .lin/.backup/<ts>/ → 还原）
+      - 失败时回滚（从 .linctl/.backup/<ts>/ → 还原）
 7) 打印「Next steps」（make protoc / go mod tidy / go build）
 ```
 
@@ -403,7 +403,7 @@ $ linctl add Post --app=api,worker   # ❌ MVP 不支持多 app 同时注入
                                   --force?         默认?
                                        │              │
                                        ▼              ▼
-                  .lin/.backup/<ts>/ 后覆盖    ⚠ warn skip
+                  .linctl/.backup/<ts>/ 后覆盖    ⚠ warn skip
                                                   （文件保留，
                                                    提示用户检查）
 ```
@@ -412,11 +412,11 @@ $ linctl add Post --app=api,worker   # ❌ MVP 不支持多 app 同时注入
 | --- | --- | --- |
 | 文件不存在 | 创建 | 同 |
 | 文件存在且与模板等价 | `⊝ silent skip` | 同 |
-| 文件存在但内容已修改 | `⚠ warn skip`，列出文件 | 备份到 `.lin/.backup/<ts>/` 后覆盖 |
+| 文件存在但内容已修改 | `⚠ warn skip`，列出文件 | 备份到 `.linctl/.backup/<ts>/` 后覆盖 |
 | 中央文件锚点存在但用户在锚点外手写了 | 仍在锚点内注入；`⚠ warn` | 同 |
 | 中央文件锚点完全缺失 | `error` exit 24 | 同（`--force` 不绕过锚点） |
 
-> **设计原则**：`add` 默认**永不覆盖用户改动**。`--force` 是显式逃生舱，**所有覆盖均备份到 `.lin/.backup/<ts>/`**（详见 [05 §5.2](./05-registration-strategy.md#52-备份生命周期)）。
+> **设计原则**：`add` 默认**永不覆盖用户改动**。`--force` 是显式逃生舱，**所有覆盖均备份到 `.linctl/.backup/<ts>/`**（详见 [05 §5.2](./05-registration-strategy.md#52-备份生命周期)）。
 
 ### 4.7 输出示例
 
@@ -902,13 +902,13 @@ func main() {
 | 命令 | 创建文件 | 修改既有文件 | AST 注入 | 备份机制 |
 | --- | --- | --- | --- | --- |
 | `new` | ✅ | ❌（除非 `--force`） | ❌ | n/a（新目录无需备份） |
-| `add` | ✅ | ✅（中央文件） | ✅ | `.lin/.backup/<ts>/`（详见 [05 §5.2](./05-registration-strategy.md#52-备份生命周期)） |
+| `add` | ✅ | ✅（中央文件） | ✅ | `.linctl/.backup/<ts>/`（详见 [05 §5.2](./05-registration-strategy.md#52-备份生命周期)） |
 | `add --force` | ✅ | ✅（强制覆盖资源文件 + 中央文件） | ✅ | 同上 |
 | `lint --fix` | ❌ | ✅（锚点恢复 / 注册补全） | ⚠️ 调用 add 内部 mutator | 同上 |
 | `doctor` | ❌ | ❌ | ❌ | n/a |
 | `version` / `completion` | ❌ | ❌ | ❌ | n/a |
 
-> **统一**：所有写操作都使用 `.lin/.backup/<ts>/` 集中备份，**不**使用同目录 `.bak` 后缀文件。理由：集中备份易于审计、`.gitignore` 已覆盖、支持未来 `--restore-backup`。
+> **统一**：所有写操作都使用 `.linctl/.backup/<ts>/` 集中备份，**不**使用同目录 `.bak` 后缀文件。理由：集中备份易于审计、`.gitignore` 已覆盖、支持未来 `--restore-backup`。
 
 ---
 

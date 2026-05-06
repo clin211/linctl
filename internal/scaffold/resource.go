@@ -362,7 +362,7 @@ func cleanupCreated(paths []string) {
 	}
 }
 
-// ensureGitignore ensures .lin/.backup/ is excluded from git.
+// ensureGitignore ensures .linctl/.backup/ is excluded from git.
 func ensureGitignore(rootDir, _ string) {
 	giPath := filepath.Join(rootDir, ".gitignore")
 	data, err := os.ReadFile(giPath)
@@ -371,14 +371,14 @@ func ensureGitignore(rootDir, _ string) {
 		return
 	}
 	content := string(data)
-	const backupLine = ".lin/.backup/"
+	const backupLine = ".linctl/.backup/"
 	if strings.Contains(content, backupLine) {
 		return
 	}
 	if !strings.HasSuffix(content, "\n") {
 		content += "\n"
 	}
-	content += "\n# linctl scaffolding tool runtime files\n" + backupLine + "\n.lin/.last-run.json\n"
+	content += "\n# linctl scaffolding tool runtime files\n" + backupLine + "\n.linctl/.last-run.json\n"
 	_ = os.WriteFile(giPath, []byte(content), 0o644)
-	fmt.Println("   ⚠  updated .gitignore (added .lin/.backup/ exclusion)")
+	fmt.Println("   ⚠  updated .gitignore (added .linctl/.backup/ exclusion)")
 }

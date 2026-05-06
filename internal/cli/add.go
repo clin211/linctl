@@ -45,7 +45,7 @@ Plus AST injection into 4 central files.`,
 	flags.Bool("dry-run", false, "Print plan, do not write files")
 	flags.Bool("no-inject", false, "Skip AST injection (only create new files)")
 	flags.Bool("skip-imports", false, "Skip auto-add of import statements")
-	flags.Bool("force", false, "Overwrite existing resource files (backed up to .lin/.backup/<ts>/)")
+	flags.Bool("force", false, "Overwrite existing resource files (backed up to .linctl/.backup/<ts>/)")
 
 	return cmd
 }

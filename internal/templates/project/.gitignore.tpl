@@ -32,8 +32,8 @@ _output/
 .DS_Store
 
 # lin backup and last-run metadata
-.lin/.backup/
-.lin/.last-run.json
+.linctl/.backup/
+.linctl/.last-run.json
 
 # Environment files
 .env
