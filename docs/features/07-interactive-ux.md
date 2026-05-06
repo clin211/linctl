@@ -77,10 +77,10 @@ require (
 
 ```
 $ linctl new
-   ┌──────────────────────────────────────────┐
-   │   ✨ lin - Go Project Scaffolder          │
-   │   v2.0.0  ·  miniblog-v4 style            │
-   └──────────────────────────────────────────┘
+   ┌────────────────────────────────────────────┐
+   │   ✨ linctl - Go Project Scaffolder         │
+   │   v0.1.0-alpha  ·  miniblog-v4 style        │
+   └────────────────────────────────────────────┘
 
   Welcome! Let's craft your project.
 ```

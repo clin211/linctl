@@ -621,7 +621,7 @@ $ linctl doctor
 linctl version [flags]
 
 Flags:
-      --short                 Print only semver (e.g. "2.0.0-rc1")
+      --short                 Print only semver (e.g. "0.1.0-alpha")
       --format string         text|json|yaml (default "text")
 ```
 
@@ -629,7 +629,7 @@ Flags:
 
 ```
 $ linctl version
-linctl version 2.0.0-rc1
+linctl version 0.1.0-alpha
   commit:   3f2e0b1
   built:    2026-04-29T11:22:33Z
   go:       go1.22.3
@@ -638,12 +638,12 @@ linctl version 2.0.0-rc1
 
 ```
 $ linctl version --short
-2.0.0-rc1
+0.1.0-alpha
 ```
 
 ```
 $ linctl version --format json
-{"version":"2.0.0-rc1","commit":"3f2e0b1","built":"2026-04-29T11:22:33Z","go":"go1.22.3","os":"darwin","arch":"arm64"}
+{"version":"0.1.0-alpha","commit":"3f2e0b1","built":"2026-04-29T11:22:33Z","go":"go1.22.3","os":"darwin","arch":"arm64"}
 ```
 
 ### 7.4 退出码

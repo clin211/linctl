@@ -10,7 +10,7 @@ import (
 
 // 由 ldflags 注入；MVP 阶段使用默认值。
 var (
-	version   = "2.0.0-rc1"
+	version   = "0.1.0-alpha"
 	commit    = "dev"
 	buildTime = "unknown"
 )

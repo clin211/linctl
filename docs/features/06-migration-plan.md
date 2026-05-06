@@ -143,7 +143,7 @@ linctl add Post   # 期望：⊝ skipped 全部
 | 5.4 | 归档 `lin/docs/` 旧版主线文档到 `lin/docs/legacy/` | docs/ |
 | 5.5 | 在 `lin/docs/features/README.md` 标记所有文档为 Stable | docs/features/README.md |
 | 5.6 | 修订 `CONTRIBUTING.md` | CONTRIBUTING.md |
-| 5.7 | 发布 v2.0.0-rc1 tag | git tag |
+| 5.7 | 发布 v0.1.0-alpha tag | git tag |
 | 5.8 | CI 跑通：`go build` / `go test` / E2E | .github/workflows/ |
 | 5.9 | 在 README 顶部添加 v1 → v2 迁移说明 | README.md |
 
@@ -217,7 +217,7 @@ linctl add Post   # 期望：⊝ skipped 全部
 | --- | --- |
 | Phase 任意阶段发现关键设计错误 | 在分支内回退到 Phase 边界点 |
 | 重构完成但发现重大缺陷 | v2 分支不合入 main，main 继续保留 v1 |
-| 已发布 v2.0.0-rc1 后发现问题 | 标记 rc1 为 deprecated，发布 rc2 修正 |
+| 已发布 v0.1.0-alpha 后发现问题 | 标记当前 alpha 版本为 deprecated，发布下一个 alpha（v0.1.0-alpha.2 / v0.2.0-alpha）修正 |
 | 完全放弃重构 | 保留 features/ 文档作为决策记录；废弃 refactor 分支 |
 
 ---
@@ -230,7 +230,7 @@ linctl add Post   # 期望：⊝ skipped 全部
 | **M2：Phase 2 完成** | `linctl new` 可用 | E2E 通过 |
 | **M3：Phase 3 完成** | `linctl add` + AST 注入可用 | E2E 通过（含幂等） |
 | **M4：Phase 4 完成** | lint/doctor/version/completion 全套 | E2E 全绿 |
-| **M5：v2.0.0-rc1 发布** | 删除清单全部生效 + 文档归档 | tag 可下载，新人按 README 30 分钟出 demo |
+| **M5：v0.1.0-alpha 发布** | 删除清单全部生效 + 文档归档 | tag 可下载，新人按 README 30 分钟出 demo |
 
 ---
 
@@ -253,7 +253,7 @@ linctl add Post   # 期望：⊝ skipped 全部
 | Phase 3 | 5d | `linctl add` 可用 |
 | Phase 4 | 2d | lint/doctor 可用 |
 | Phase 5 | 3d | 旧版归档 + v2 发布 |
-| **小计** | **17d**（约 3-4 个工作周） | v2.0.0-rc1 |
+| **小计** | **17d**（约 3-4 个工作周） | v0.1.0-alpha |
 
 > 估算前提：单人全职。如多人协作（如 1 人做模板 + 1 人做 AST），可缩短至 ~2 周。
 
@@ -377,13 +377,19 @@ ls -lh /tmp/linctl
 - 2026-10 ~ 2027-04：仅安全
 - 2027-04 之后：冻结，仅可下载
 
-### 11.6 RC / Pre-release 阶段
+### 11.6 Pre-release 阶段（alpha / beta / rc）
 
-`v2.0.0-rc1` ~ `v2.0.0-rcN`：
+`v0.x` 系列 alpha/beta：
 
-- 命令、flag、退出码、锚点格式**已冻结**
-- 模板内容可能小幅迭代（仅 PATCH 类）
-- rc 期间收集真实反馈，正式 v2.0.0 发布前不再做 MAJOR/MINOR 变更
+- 命令、flag、退出码、锚点格式可能仍在收敛，**不保证向后兼容**
+- 模板内容会小幅迭代以打磨用户体验
+- 收集真实使用反馈，逐步推向 `v0.x` 稳定与 `v1.0.0` 正式版
+
+`v1.0.0-rcN` 起：
+
+- 命令、flag、退出码、锚点格式**冻结**
+- 仅做 PATCH 类修复
+- rc 期间收集回归反馈，正式 v1.0.0 发布前不再做 MAJOR/MINOR 变更
 
 ---
 
@@ -508,7 +514,7 @@ linctl-check:
 | CI 中 `linctl` 命令必须**非交互** | 自动检测非 TTY；或显式 `--non-interactive` |
 | `linctl doctor` 在内网 / airgap | 用 `--offline` 跳过网络检查（详见 [02 §6.2.1](./02-command-set.md#621---offline-行为)） |
 | 退出码为信号源 | CI 基于 `exit_code` 判断；JSON 报告作为补充 |
-| 锁定 linctl 版本 | 项目 `Makefile` 中固化 `LINCTL_VERSION := 2.0.0`，下载时校验 |
+| 锁定 linctl 版本 | 项目 `Makefile` 中固化 `LINCTL_VERSION := 0.1.0-alpha`，下载时校验 |
 
 ---
 

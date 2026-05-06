@@ -45,7 +45,7 @@ It does exactly two things:
   2. linctl add <Resource>...    Add a full-stack resource to an existing project.
 
 Plus a few helpers: lint / doctor / version / completion.`,
-		Version:       "2.0.0-rc1",
+		Version:       "0.1.0-alpha",
 		SilenceErrors: true,
 		SilenceUsage:  true,
 

@@ -268,7 +268,7 @@ func NewContextFromFlags(flags Flags) (*Context, error) {
 		Email:       email,
 		Year:        time.Now().Year(),
 		GoVersion:   goVer,
-		LinVersion:  "2.0.0-rc1",
+		LinVersion:  "0.1.0-alpha",
 	}, nil
 }
 
@@ -375,7 +375,7 @@ func LoadContext(rootDir string, flags Flags) (*Context, error) {
 		Email:       gitConfigValue("user.email"),
 		Year:        time.Now().Year(),
 		GoVersion:   goVer,
-		LinVersion:  "2.0.0-rc1",
+		LinVersion:  "0.1.0-alpha",
 	}, nil
 }
 
