@@ -11,22 +11,22 @@ import (
 	"time"
 )
 
-// DoctorOptions controls the behaviour of Doctor.
+// DoctorOptions 控制 Doctor 的行为。
 type DoctorOptions struct {
 	Strict       bool
 	Offline      bool
 	ReportFormat string
-	Checks       []string // subset of check IDs to run
-	Skip         []string // check IDs to skip
+	Checks       []string // 仅运行指定 ID 的检查项
+	Skip         []string // 跳过这些 ID 的检查项
 }
 
-// Doctor inspects the local environment for tools required by lin.
+// Doctor 检查本地环境是否具备 lin 所需的各类工具。
 //
 // 退出码规则（02 §6.5）：
 //
-//	0  → all error-level checks pass
-//	35 → at least one error item
-//	36 → --strict and at least one warning
+//	0  → 所有 error 级检查通过
+//	35 → 至少一项检查为 error
+//	36 → --strict 模式下至少一项检查为 warning
 func Doctor(opts DoctorOptions) (*Report, error) {
 	type checkFn struct {
 		id  string
@@ -121,7 +121,7 @@ func checkGitVersion() Item {
 	}
 
 	verStr := strings.TrimPrefix(strings.TrimSpace(string(out)), "git version ")
-	// macOS git appends extra "(Apple Git-143)" style info
+	// macOS 自带 git 会附加 "(Apple Git-143)" 之类的额外信息
 	if sp := strings.Fields(verStr); len(sp) > 0 {
 		verStr = sp[0]
 	}

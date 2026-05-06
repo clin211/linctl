@@ -10,7 +10,7 @@ import (
 	"github.com/clin211/linctl/internal/scaffold"
 )
 
-// LintOptions controls the behaviour of Lint.
+// LintOptions 控制 Lint 的行为。
 type LintOptions struct {
 	Fix          bool
 	DryRun       bool
@@ -19,17 +19,17 @@ type LintOptions struct {
 	ReportFormat string
 }
 
-// Lint validates project layout, registration consistency, and post-protoc state.
+// Lint 校验项目目录布局、注册一致性以及 protoc 后的占位状态。
 //
-// Anchor checks no longer exist — registration is verified directly against
-// AST symbols (presence of receiver methods / interface methods).
+// Anchor（锚点注释）机制已被移除——注册一致性现在直接基于
+// AST 符号（receiver 方法 / 接口方法的存在性）判断。
 //
-// Exit codes (02 §5.5):
+// 退出码（02 §5.5）：
 //
-//	0  → no issues (or --fix resolved all)
-//	30 → at least one error
-//	31 → --fix partially failed
-//	32 → project root not found
+//	0  → 无任何问题（或 --fix 全部修复）
+//	30 → 至少一项 error
+//	31 → --fix 部分失败
+//	32 → 找不到项目根目录
 func Lint(rootDir string, opts LintOptions) (*Report, error) {
 	ctx, err := scaffold.LoadContext(rootDir, scaffold.Flags{})
 	if err != nil {
@@ -57,7 +57,7 @@ func Lint(rootDir string, opts LintOptions) (*Report, error) {
 	report := &Report{}
 	app := ctx.AppName
 
-	// ── 1. directory structure checks ───────────────────────────────────────
+	// ── 1. 目录结构检查 ───────────────────────────────────────
 	if shouldRun("dir/cmd-app") {
 		mainFile := filepath.Join(rootDir, "cmd", app, "main.go")
 		if _, statErr := os.Stat(mainFile); os.IsNotExist(statErr) {
@@ -103,7 +103,7 @@ func Lint(rootDir string, opts LintOptions) (*Report, error) {
 		}
 	}
 
-	// ── 2. registration consistency (biz/store) ─────────────────────────────
+	// ── 2. 注册一致性（biz/store）─────────────────────────────
 	if shouldRun("register/biz-impl") {
 		checkRegisterConsistency(report, rootDir, app, "biz-impl", opts)
 	}
@@ -111,7 +111,7 @@ func Lint(rootDir string, opts LintOptions) (*Report, error) {
 		checkRegisterConsistency(report, rootDir, app, "store-impl", opts)
 	}
 
-	// ── 3. post-protoc placeholders ─────────────────────────────────────────
+	// ── 3. protoc 后的占位文件 ─────────────────────────────────────────
 	if shouldRun("lin/post-protoc-placeholder") {
 		pattern := filepath.Join(rootDir, "pkg", "api", app, "v1", "*_lin.go")
 		placeholders, _ := filepath.Glob(pattern)
@@ -130,7 +130,7 @@ func Lint(rootDir string, opts LintOptions) (*Report, error) {
 		}
 	}
 
-	// ── 4. path safety ──────────────────────────────────────────────────────
+	// ── 4. 路径安全检查 ──────────────────────────────────────────────────────
 	if shouldRun("safety/path-traversal") {
 		report.addItem(Item{
 			Category: "safety",
@@ -143,9 +143,9 @@ func Lint(rootDir string, opts LintOptions) (*Report, error) {
 	return report, nil
 }
 
-// checkRegisterConsistency verifies every <resource>/ subdirectory under biz/v1
-// (or every <resource>.go under store/) is registered in the central biz.go /
-// store.go via AST symbols. MVP: report only, no auto-fix.
+// checkRegisterConsistency 校验 biz/v1 下每个 <resource>/ 子目录
+// （或 store/ 下每个 <resource>.go）是否已通过 AST 符号注册到中心
+// 文件 biz.go / store.go。MVP 仅报告，不做自动修复。
 func checkRegisterConsistency(report *Report, rootDir, app, kind string, opts LintOptions) {
 	ruleID := "register/" + kind
 

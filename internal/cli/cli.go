@@ -1,7 +1,7 @@
-// Package cli is the cobra command-dispatch layer for linctl (lin v2).
+// Package cli 是 linctl（lin v2）的 cobra 命令分发层。
 //
-// Layout convention:
-//   - cli.go        registers the root command and global flags.
+// 目录约定：
+//   - cli.go        注册根命令与全局 flag。
 //   - add.go        `linctl add <Resource>...`
 //   - new.go        `linctl new <project>`
 //   - lint.go       `linctl lint`
@@ -9,7 +9,7 @@
 //   - version.go    `linctl version`
 //   - completion.go `linctl completion <shell>`
 //
-// Design source: lin/docs/features/02-command-set.md §1, §2.
+// 设计来源：lin/docs/features/02-command-set.md §1、§2。
 package cli
 
 import (

@@ -9,20 +9,20 @@ import (
 	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
-// ProtoPayload carries parameters for AddProtoImport.
+// ProtoPayload 是 AddProtoImport 的入参。
 //
-// Insertion is purely structural: the target import is placed inside the existing
-// import block (sorted-aware), or directly after the package/option header lines
-// when no imports exist yet. No anchor comments are used.
+// 插入完全是结构性的：目标 import 会被放入已有 import 块（按字典序感知插入），
+// 或当尚无任何 import 时直接置于 package/option 等头部声明之后。
+// 不使用任何锚点注释。
 type ProtoPayload struct {
-	// File is the path to the .proto file to modify (overwritten by the caller).
+	// File 是要修改的 .proto 文件路径（由调用方覆写）。
 	File string
-	// Import is the import string to add (e.g. "post.proto").
+	// Import 是要新增的 import 字符串（如 "post.proto"）。
 	Import string
 }
 
-// AddProtoImport inserts an import statement into a .proto file.
-// Idempotent: skips if the import already exists.
+// AddProtoImport 向 .proto 文件中插入一条 import 语句。
+// 注入幂等：若 import 已存在则跳过。
 func AddProtoImport(file string, p ProtoPayload) error {
 	data, err := os.ReadFile(file)
 	if err != nil {
@@ -62,7 +62,7 @@ func AddProtoImport(file string, p ProtoPayload) error {
 	return nil
 }
 
-// detectImportLines returns 0-based line indices of import "..." lines.
+// detectImportLines 返回所有 import "..." 行的 0-based 行号。
 func detectImportLines(lines []string) []int {
 	var idx []int
 	for i, l := range lines {
@@ -74,7 +74,7 @@ func detectImportLines(lines []string) []int {
 	return idx
 }
 
-// extractImportValues extracts the quoted import path from each import line.
+// extractImportValues 从每行 import 语句中抽取被引号包裹的 import 路径。
 func extractImportValues(lines []string, lineNos []int) []string {
 	var vals []string
 	for _, i := range lineNos {
@@ -86,13 +86,13 @@ func extractImportValues(lines []string, lineNos []int) []string {
 	return vals
 }
 
-// isSortedImports returns true if the import values are in ascending order.
+// isSortedImports 判断 import 列表是否已按升序排列。
 func isSortedImports(vals []string) bool {
 	return sort.StringsAreSorted(vals)
 }
 
-// insertAfterHeader places importLine right after the proto header
-// (option / package lines), skipping any leading comments.
+// insertAfterHeader 将 importLine 插入到 proto 头部（option / package 行）之后，
+// 并跳过紧贴头部的注释。
 func insertAfterHeader(lines []string, importLine string) []string {
 	insertAt := 0
 	for i, l := range lines {
@@ -115,7 +115,7 @@ func insertAfterHeader(lines []string, importLine string) []string {
 	return result
 }
 
-// insertSorted inserts importLine at the alphabetically correct position.
+// insertSorted 将 importLine 插入到字典序应在的位置。
 func insertSorted(lines []string, importLineNos []int, importLine, importVal string) []string {
 	insertIdx := importLineNos[len(importLineNos)-1] + 1
 	for _, lineNo := range importLineNos {
@@ -130,13 +130,13 @@ func insertSorted(lines []string, importLineNos []int, importLine, importVal str
 	return insertAt(lines, insertIdx, importLine)
 }
 
-// insertAfterLast inserts importLine after the last import line.
+// insertAfterLast 将 importLine 插入到最后一行 import 之后。
 func insertAfterLast(lines []string, importLineNos []int, importLine string) []string {
 	last := importLineNos[len(importLineNos)-1]
 	return insertAt(lines, last+1, importLine)
 }
 
-// insertAt inserts a line at position i (0-based).
+// insertAt 在指定的 0-based 位置 i 插入一行。
 func insertAt(lines []string, i int, line string) []string {
 	result := make([]string, 0, len(lines)+1)
 	result = append(result, lines[:i]...)

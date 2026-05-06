@@ -11,37 +11,37 @@ import (
 	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
-// InterfacePayload carries parameters for AddInterfaceMethod.
+// InterfacePayload 是 AddInterfaceMethod 的入参。
 //
-// Insertion locations are derived purely from Go AST structure
-// (interface name, receiver struct name) — no anchor comments are required.
+// 插入点完全由 Go AST 结构（接口名、receiver 名）决定 ——
+// 不依赖任何锚点注释。
 type InterfacePayload struct {
-	// InterfaceName is the name of the interface type (e.g. "IBiz").
+	// InterfaceName 是接口类型名（如 "IBiz"）。
 	InterfaceName string
-	// StructName is the receiver type (e.g. "biz").
+	// StructName 是 receiver 类型名（如 "biz"）。
 	StructName string
 
-	// Method is the method name to add (e.g. "PostV1").
+	// Method 是要新增的方法名（如 "PostV1"）。
 	Method string
-	// ReturnType is the return type string (e.g. "postv1.PostBiz").
+	// ReturnType 是返回类型字符串（如 "postv1.PostBiz"）。
 	ReturnType string
 
-	// ImportAlias and ImportPath form the import to add (optional).
+	// ImportAlias 与 ImportPath 共同构成需要新增的 import（可选）。
 	ImportAlias string
 	ImportPath  string
 
-	// ImplBody is the function body expression (e.g. "return postv1.New(b.store)").
-	// When empty, an empty body is emitted.
+	// ImplBody 是函数体表达式（如 "return postv1.New(b.store)"）。
+	// 留空时生成空函数体。
 	ImplBody string
 }
 
-// AddInterfaceMethod injects a method into a Go interface and adds a corresponding
-// receiver method, with proper import. Idempotent.
+// AddInterfaceMethod 将一个方法注入到 Go 接口，并补充对应的 receiver 方法
+// 与 import。注入幂等。
 //
-// All insertion points are computed from AST structure:
-//   - Interface method  → appended to *dst.InterfaceType.Methods.List of InterfaceName.
-//   - Receiver method   → appended to f.Decls (top-level decls).
-//   - Import            → prepended to the first import GenDecl, or a new one if absent.
+// 所有插入点均由 AST 结构推导得出：
+//   - 接口方法 → 追加到 InterfaceName 对应 *dst.InterfaceType.Methods.List。
+//   - receiver 方法 → 追加到 f.Decls（顶层 decl 列表）。
+//   - import → 插入到第一个 import GenDecl 的开头；若不存在则新建。
 func AddInterfaceMethod(file string, p InterfacePayload) error {
 	f, err := ParseFile(file)
 	if err != nil {
@@ -88,7 +88,7 @@ func AddInterfaceMethod(file string, p InterfacePayload) error {
 	return WriteFile(file, f)
 }
 
-// hasImport reports whether f already imports the given path.
+// hasImport 判断 f 是否已经 import 了指定路径。
 func hasImport(f *dst.File, path string) bool {
 	for _, decl := range f.Decls {
 		gd, ok := decl.(*dst.GenDecl)
@@ -108,8 +108,8 @@ func hasImport(f *dst.File, path string) bool {
 	return false
 }
 
-// addImport prepends an import spec to the first import GenDecl in the file.
-// If no import block exists, one is created at the top of Decls.
+// addImport 在文件第一个 import GenDecl 的开头插入一条 import spec；
+// 若不存在则在 Decls 顶部新建一个 import 块。
 func addImport(f *dst.File, alias, path string) {
 	spec := &dst.ImportSpec{
 		Path: &dst.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("%q", path)},
@@ -135,7 +135,7 @@ func addImport(f *dst.File, alias, path string) {
 	f.Decls = append([]dst.Decl{newDecl}, f.Decls...)
 }
 
-// findInterfaceDecl locates an interface type declaration by name.
+// findInterfaceDecl 按名称定位接口类型声明。
 func findInterfaceDecl(f *dst.File, name string) *dst.InterfaceType {
 	for _, decl := range f.Decls {
 		gd, ok := decl.(*dst.GenDecl)
@@ -156,7 +156,7 @@ func findInterfaceDecl(f *dst.File, name string) *dst.InterfaceType {
 	return nil
 }
 
-// hasMethodInInterface reports whether the interface already declares a method with the given name.
+// hasMethodInInterface 判断接口是否已声明了同名方法。
 func hasMethodInInterface(iface *dst.InterfaceType, name string) bool {
 	for _, field := range iface.Methods.List {
 		for _, n := range field.Names {
@@ -168,7 +168,7 @@ func hasMethodInInterface(iface *dst.InterfaceType, name string) bool {
 	return false
 }
 
-// appendMethodToInterface appends a method field to an interface.
+// appendMethodToInterface 向接口追加一个方法 field。
 func appendMethodToInterface(iface *dst.InterfaceType, method, returnType string) {
 	field := &dst.Field{
 		Names: []*dst.Ident{dst.NewIdent(method)},
@@ -178,7 +178,7 @@ func appendMethodToInterface(iface *dst.InterfaceType, method, returnType string
 	iface.Methods.List = append(iface.Methods.List, field)
 }
 
-// buildFuncTypeExpr constructs a *dst.FuncType that returns the given type.
+// buildFuncTypeExpr 构造一个返回值为 returnType 的 *dst.FuncType。
 func buildFuncTypeExpr(returnType string) *dst.FuncType {
 	return &dst.FuncType{
 		Params: &dst.FieldList{},
@@ -190,8 +190,8 @@ func buildFuncTypeExpr(returnType string) *dst.FuncType {
 	}
 }
 
-// parseTypeExpr converts a type string to a dst.Expr.
-// Handles "pkg.Type" → SelectorExpr, "Type" → Ident, "*Type" → StarExpr.
+// parseTypeExpr 将类型字符串转换为 dst.Expr。
+// 支持 "pkg.Type" → SelectorExpr、"Type" → Ident、"*Type" → StarExpr。
 func parseTypeExpr(s string) dst.Expr {
 	s = strings.TrimSpace(s)
 	if strings.HasPrefix(s, "*") {
@@ -206,7 +206,7 @@ func parseTypeExpr(s string) dst.Expr {
 	return dst.NewIdent(s)
 }
 
-// hasReceiverMethod reports whether file already has func (*structName) method(...).
+// hasReceiverMethod 判断文件中是否已存在 func (*structName) method(...) 形式的方法。
 func hasReceiverMethod(f *dst.File, structName, method string) bool {
 	for _, decl := range f.Decls {
 		fd, ok := decl.(*dst.FuncDecl)
@@ -232,7 +232,7 @@ func hasReceiverMethod(f *dst.File, structName, method string) bool {
 	return false
 }
 
-// appendReceiverMethod appends a receiver method to the file's top-level Decls.
+// appendReceiverMethod 将一个 receiver 方法追加到文件的顶层 Decls。
 func appendReceiverMethod(f *dst.File, structName, method, returnType, body string) {
 	recv := &dst.FieldList{
 		List: []*dst.Field{
@@ -270,7 +270,7 @@ func appendReceiverMethod(f *dst.File, structName, method, returnType, body stri
 	f.Decls = append(f.Decls, fd)
 }
 
-// parseCallExpr builds a dst.Expr from a call expression string like "postv1.New(b.store)".
+// parseCallExpr 从形如 "postv1.New(b.store)" 的字符串构造 dst.Expr。
 func parseCallExpr(s string) dst.Expr {
 	s = strings.TrimSpace(s)
 
@@ -314,7 +314,7 @@ func parseCallExpr(s string) dst.Expr {
 	}
 }
 
-// splitArgs splits a comma-separated argument list, respecting nested parentheses.
+// splitArgs 将以逗号分隔的参数列表切分开，正确处理嵌套括号。
 func splitArgs(s string) []string {
 	var result []string
 	depth := 0
@@ -338,7 +338,7 @@ func splitArgs(s string) []string {
 	return result
 }
 
-// ParseFileWithDecorator parses a Go file using the dst decorator (exported for testing).
+// ParseFileWithDecorator 使用 dst decorator 解析 Go 文件（仅供测试导出使用）。
 func ParseFileWithDecorator(src []byte) (*dst.File, *decorator.Decorator, error) {
 	d := decorator.NewDecorator(token.NewFileSet())
 	f, err := d.Parse(src)

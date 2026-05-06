@@ -1,10 +1,9 @@
-// Package ast implements AST-based code injection for lin v2.
+// Package ast 实现 lin v2 的基于 AST 的代码注入。
 //
-// The injector locates insertion points purely from Go AST structure
-// (interface names, struct receivers, top-level functions) — there are
-// no comment markers or anchor regions involved.
+// injector 完全依据 Go AST 结构（接口名、struct receiver、顶层函数）
+// 定位插入点 —— 不依赖任何注释标记或锚点区域。
 //
-// Design source: lin/docs/features/05-registration-strategy.md.
+// 设计来源：lin/docs/features/05-registration-strategy.md。
 package ast
 
 import (
@@ -22,14 +21,14 @@ import (
 	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
-// backupEnv lets tests redirect the backup root via env var.
+// backupEnv 允许测试通过该环境变量重定向备份根目录。
 const backupEnv = "LINCTL_BACKUP_DIR"
 
-// projectBackupBase returns the per-project backup root directory under the
-// user-level cache (so backups never live inside the user's project tree).
+// projectBackupBase 返回项目级别的备份根目录（位于用户级缓存下，
+// 因此备份文件不会污染用户的项目目录）。
 //
-// Layout: <UserCacheDir>/linctl/backups/<basename(rootDir)>-<short-hash>
-// Override the entire root via the LINCTL_BACKUP_DIR env (used by tests).
+// 目录结构：<UserCacheDir>/linctl/backups/<basename(rootDir)>-<short-hash>
+// 测试可通过 LINCTL_BACKUP_DIR 环境变量整体覆写根目录。
 func projectBackupBase(rootDir string) (string, error) {
 	if env := os.Getenv(backupEnv); env != "" {
 		return env, nil
@@ -47,7 +46,7 @@ func projectBackupBase(rootDir string) (string, error) {
 	return filepath.Join(cacheDir, "linctl", "backups", name), nil
 }
 
-// Injector orchestrates backup, mutation, and rollback of central files.
+// Injector 编排中心文件的备份、变更与回滚。
 type Injector struct {
 	rootDir   string
 	timestamp string
@@ -59,7 +58,7 @@ type backedFile struct {
 	backupPath string
 }
 
-// NewInjector creates an Injector for the given project root.
+// NewInjector 为指定的项目根目录创建一个 Injector。
 func NewInjector(rootDir string) *Injector {
 	return &Injector{
 		rootDir:   rootDir,
@@ -67,13 +66,13 @@ func NewInjector(rootDir string) *Injector {
 	}
 }
 
-// Inject executes all InjectSpecs in plan.Specs.
+// Inject 执行 plan.Specs 中的所有 InjectSpec。
 //
-// Algorithm:
-//  1. Backup all target files.
-//  2. Execute each mutator in order.
-//  3. On any failure, restore all backed-up files and return a wrapped error.
-//  4. On success, clean up the backup directory.
+// 算法：
+//  1. 备份所有目标文件。
+//  2. 按顺序执行各个 mutator。
+//  3. 任一步骤失败则恢复全部备份并返回包装后的错误。
+//  4. 全部成功后清理备份目录。
 func (inj *Injector) Inject(plan InjectPlan) error {
 	seen := map[string]bool{}
 	for _, spec := range plan.Specs {
@@ -105,7 +104,7 @@ func (inj *Injector) Inject(plan InjectPlan) error {
 	return nil
 }
 
-// Restore restores all backed-up files to their original paths.
+// Restore 将所有已备份文件恢复到原始路径。
 func (inj *Injector) Restore() error {
 	var firstErr error
 	for _, bf := range inj.backed {
@@ -117,7 +116,7 @@ func (inj *Injector) Restore() error {
 	return firstErr
 }
 
-// applySpec dispatches to the appropriate mutator.
+// applySpec 将 spec 分发到对应的 mutator。
 func (inj *Injector) applySpec(file string, spec InjectSpec) error {
 	switch spec.Mutator {
 	case MutatorKindInterface:
@@ -151,7 +150,7 @@ func (inj *Injector) applySpec(file string, spec InjectSpec) error {
 	}
 }
 
-// MutatorKind identifies the AST mutator type.
+// MutatorKind 标识 AST mutator 的类型。
 type MutatorKind string
 
 const (
@@ -160,19 +159,19 @@ const (
 	MutatorKindRegister  MutatorKind = "register"
 )
 
-// InjectSpec describes a single AST injection.
+// InjectSpec 描述一次 AST 注入。
 type InjectSpec struct {
 	File    string
 	Mutator MutatorKind
 	Payload any
 }
 
-// InjectPlan groups all injection specs for one operation.
+// InjectPlan 聚合一次注入操作中的所有 spec。
 type InjectPlan struct {
 	Specs []InjectSpec
 }
 
-// ParseFile parses a Go source file into a dst.File.
+// ParseFile 将一个 Go 源文件解析为 dst.File。
 func ParseFile(path string) (*dst.File, error) {
 	src, err := os.ReadFile(path)
 	if err != nil {
@@ -185,7 +184,7 @@ func ParseFile(path string) (*dst.File, error) {
 	return f, nil
 }
 
-// WriteFile serialises a dst.File back to the given path.
+// WriteFile 将 dst.File 重新序列化并写回指定路径。
 func WriteFile(path string, f *dst.File) error {
 	pr, pw := io.Pipe()
 	var writeErr error
@@ -207,8 +206,8 @@ func WriteFile(path string, f *dst.File) error {
 	return nil
 }
 
-// BackupFile copies src (relative to rootDir) into the user-level backup
-// cache: <projectBackupBase>/<ts>/<rel>. Returns the backup path.
+// BackupFile 将 src（相对 rootDir 的路径）拷贝到用户级备份缓存：
+// <projectBackupBase>/<ts>/<rel>。返回备份后文件的路径。
 func BackupFile(rootDir, relPath, ts string) (string, error) {
 	src := filepath.Join(rootDir, relPath)
 	base, err := projectBackupBase(rootDir)
@@ -235,7 +234,7 @@ func BackupFile(rootDir, relPath, ts string) (string, error) {
 	return dstPath, nil
 }
 
-// RestoreFromBackup copies backupPath back to originalPath.
+// RestoreFromBackup 将 backupPath 恢复回 originalPath。
 func RestoreFromBackup(backupPath, originalPath string) error {
 	data, err := os.ReadFile(backupPath)
 	if err != nil {
@@ -249,8 +248,8 @@ func RestoreFromBackup(backupPath, originalPath string) error {
 	return nil
 }
 
-// CleanupBackup removes the backup directory for a given timestamp.
-// Also prunes oldest backups keeping only the 3 most recent.
+// CleanupBackup 删除指定时间戳对应的备份目录，
+// 并裁剪历史备份只保留最近的 3 份。
 func CleanupBackup(rootDir, ts string) error {
 	base, err := projectBackupBase(rootDir)
 	if err != nil {
@@ -266,12 +265,12 @@ func CleanupBackup(rootDir, ts string) error {
 	return nil
 }
 
-// NewTimestamp returns a timestamp string suitable for backup directory names.
+// NewTimestamp 返回一个适合用作备份目录名的时间戳。
 func NewTimestamp() string {
 	return time.Now().UTC().Format("20060102T150405Z")
 }
 
-// pruneOldBackups keeps only the 3 most recent backup directories.
+// pruneOldBackups 仅保留最近的 3 个备份目录。
 func pruneOldBackups(rootDir string) {
 	parent, err := projectBackupBase(rootDir)
 	if err != nil {

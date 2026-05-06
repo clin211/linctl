@@ -19,7 +19,7 @@ type templateVars struct {
 	Cache       string
 	Framework   string
 	Features    []string
-	Resource    string // PascalCase resource name (e.g. "Post"), only set for linctl add
+	Resource    string // PascalCase 资源名（如 "Post"），仅 linctl add 时设置
 	Author      string
 	Email       string
 	Year        int
@@ -123,6 +123,6 @@ func renderDiag(tplPath string, err error) error {
 	if hint != "" {
 		diag += "\n  Hint:     " + hint
 	}
-	_ = e // suppress unused warning
+	_ = e // 抑制未使用变量告警
 	return errs.New(code, diag)
 }

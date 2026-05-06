@@ -9,21 +9,20 @@ import (
 	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
-// RegisterPayload carries parameters for AppendRegistration.
+// RegisterPayload 是 AppendRegistration 的入参。
 //
-// The insertion target is the Body of the top-level function FunctionName.
-// No anchor comments are required.
+// 插入目标是顶层函数 FunctionName 的函数体；
+// 不依赖任何锚点注释。
 type RegisterPayload struct {
-	// FunctionName is the top-level function whose body will receive the
-	// new statement (e.g. "RegisterAll").
+	// FunctionName 是用于接收新增语句的顶层函数名（如 "RegisterAll"）。
 	FunctionName string
-	// Statement is the call expression to append, written as a Go expression
-	// such as "RegisterErrors(PostErrors()...)".
+	// Statement 是要追加的调用表达式（Go 语法），
+	// 例如 "RegisterErrors(PostErrors()...)"。
 	Statement string
 }
 
-// AppendRegistration appends a call statement to the Body of FunctionName.
-// Idempotent: if the same statement is already present in the Body, returns nil.
+// AppendRegistration 将一条调用语句追加到 FunctionName 的函数体内。
+// 注入幂等：若该函数体内已存在等价语句则直接返回 nil。
 func AppendRegistration(file string, p RegisterPayload) error {
 	f, err := ParseFile(file)
 	if err != nil {
@@ -54,7 +53,7 @@ func AppendRegistration(file string, p RegisterPayload) error {
 	return WriteFile(file, f)
 }
 
-// findFuncDecl locates a top-level (non-receiver) function declaration by name.
+// findFuncDecl 按名称定位顶层（非 receiver）函数声明。
 func findFuncDecl(f *dst.File, name string) *dst.FuncDecl {
 	for _, decl := range f.Decls {
 		fd, ok := decl.(*dst.FuncDecl)
@@ -71,9 +70,8 @@ func findFuncDecl(f *dst.File, name string) *dst.FuncDecl {
 	return nil
 }
 
-// hasEquivalentStmt reports whether body already contains a statement whose
-// printed form equals stmt's printed form. We compare via canonical forms
-// produced by exprString to ignore positions and decorations.
+// hasEquivalentStmt 判断 body 中是否已经存在与 stmt 文本等价的语句。
+// 通过 canonicalCallString 生成的稳定文本进行比较，忽略位置与装饰信息。
 func hasEquivalentStmt(body *dst.BlockStmt, stmt *dst.ExprStmt) bool {
 	want := canonicalCallString(stmt.X)
 	if want == "" {
@@ -91,9 +89,8 @@ func hasEquivalentStmt(body *dst.BlockStmt, stmt *dst.ExprStmt) bool {
 	return false
 }
 
-// canonicalCallString renders a *dst.CallExpr (or any expression) into a stable
-// textual form suitable for equality comparison. Uses the dst printer indirectly
-// by re-implementing the small subset we generate via parseCallExpr.
+// canonicalCallString 将 *dst.CallExpr（或任意表达式）渲染为稳定的文本形式，
+// 用于等值比较。该函数在 parseCallExpr 生成的子集上等价于 dst printer。
 func canonicalCallString(expr dst.Expr) string {
 	var sb strings.Builder
 	writeExpr(&sb, expr)

@@ -9,13 +9,13 @@ import (
 	"io"
 )
 
-// Report holds the output of Doctor or Lint.
+// Report 持有 Doctor 或 Lint 的输出。
 type Report struct {
 	Items   []Item  `json:"items"`
 	Summary Summary `json:"summary"`
 }
 
-// Item represents a single check result.
+// Item 表示单条检查结果。
 type Item struct {
 	Category string `json:"category"`
 	Name     string `json:"name"`
@@ -24,7 +24,7 @@ type Item struct {
 	Hint     string `json:"hint,omitempty"`
 }
 
-// Summary aggregates check outcomes.
+// Summary 汇总各项检查结果数量。
 type Summary struct {
 	OK       int `json:"ok"`
 	Warnings int `json:"warnings"`
@@ -32,7 +32,7 @@ type Summary struct {
 	Info     int `json:"info"`
 }
 
-// addItem appends an item to the report and increments the appropriate summary counter.
+// addItem 将一条检查结果追加到 report，并自增对应的统计计数。
 func (r *Report) addItem(item Item) {
 	r.Items = append(r.Items, item)
 	switch item.Status {
@@ -47,7 +47,7 @@ func (r *Report) addItem(item Item) {
 	}
 }
 
-// PrintReport writes the report to w in the specified format ("text" or "json").
+// PrintReport 将 report 以指定格式（"text" 或 "json"）写入 w。
 func PrintReport(report *Report, format string, w io.Writer) error {
 	if format == "json" {
 		return json.NewEncoder(w).Encode(report)

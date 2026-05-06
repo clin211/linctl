@@ -379,7 +379,7 @@ func LoadContext(rootDir string, flags Flags) (*Context, error) {
 	}, nil
 }
 
-// findProjectRoot walks up from startDir looking for a directory with go.mod.
+// findProjectRoot 从 startDir 向上查找包含 go.mod 的目录。
 func findProjectRoot(startDir string) (string, error) {
 	dir, err := filepath.Abs(startDir)
 	if err != nil {
@@ -391,7 +391,7 @@ func findProjectRoot(startDir string) (string, error) {
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			// Reached filesystem root
+			// 已抵达文件系统根目录
 			break
 		}
 		dir = parent
@@ -401,7 +401,7 @@ func findProjectRoot(startDir string) (string, error) {
 		WithHint("run `linctl add` from inside a Go project (must have go.mod)")
 }
 
-// readModulePath reads the first "module ..." line from go.mod.
+// readModulePath 读取 go.mod 中第一行的 "module ..." 声明。
 func readModulePath(gomodPath string) (string, error) {
 	data, err := os.ReadFile(gomodPath)
 	if err != nil {
@@ -420,7 +420,7 @@ func readModulePath(gomodPath string) (string, error) {
 	return "", errs.New(errs.CodeBadGoMod, "scaffold: module declaration not found in go.mod")
 }
 
-// inferAppName lists cmd/* subdirectories to find the app name.
+// inferAppName 通过列出 cmd/* 子目录推断 app 名。
 func inferAppName(projectRoot string) (string, error) {
 	cmdDir := filepath.Join(projectRoot, "cmd")
 	entries, err := os.ReadDir(cmdDir)
@@ -434,7 +434,7 @@ func inferAppName(projectRoot string) (string, error) {
 		if !e.IsDir() {
 			continue
 		}
-		// Check if it has a main.go
+		// 判断该子目录下是否有 main.go
 		if _, err := os.Stat(filepath.Join(cmdDir, e.Name(), "main.go")); err == nil {
 			apps = append(apps, e.Name())
 		}
@@ -454,7 +454,7 @@ func inferAppName(projectRoot string) (string, error) {
 	}
 }
 
-// inferStorage reads store.go and checks imports to determine the storage backend.
+// inferStorage 读取 store.go 并通过 import 判断存储后端类型。
 func inferStorage(storePath string) string {
 	data, err := os.ReadFile(storePath)
 	if err != nil {
@@ -471,7 +471,7 @@ func inferStorage(storePath string) string {
 	case strings.Contains(src, "go.mongodb.org/mongo-driver"):
 		return "mongo"
 	case strings.Contains(src, "gorm.io"):
-		return "gorm-mysql" // gorm without explicit driver → default to mysql
+		return "gorm-mysql" // 仅引入 gorm 但未指定 driver → 默认按 mysql 处理
 	default:
 		return "memory"
 	}

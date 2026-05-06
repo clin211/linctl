@@ -55,7 +55,7 @@ Checks include:
 			}
 
 			if opts.Fix && opts.DryRun {
-				// dry-run is informational; errors were already downgraded to info
+				// dry-run 仅作信息输出；错误已被降级为 info
 				return nil
 			}
 

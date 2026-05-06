@@ -14,51 +14,51 @@ import (
 	"github.com/clin211/linctl/internal/pkg/errs"
 )
 
-// AddOptions controls the behaviour of AddResource.
+// AddOptions 控制 AddResource 的行为。
 type AddOptions struct {
 	With        []string // [conversion, validation, proto, errno]
-	Without     []string // inverse of With; mutually exclusive
+	Without     []string // 与 With 互斥
 	Ops         []string // [create, update, delete, get, list]
-	Version     string   // e.g. "v1"
-	Plural      string   // override plural form
-	NoInject    bool     // skip AST injection
-	SkipImports bool     // skip import statements
+	Version     string   // 如 "v1"
+	Plural      string   // 自定义复数形式
+	NoInject    bool     // 跳过 AST 注入
+	SkipImports bool     // 跳过 import 语句
 }
 
-// AddResource is the core of linctl add.
+// AddResource 是 linctl add 的核心。
 //
-// Design source: 02 §4.5 behaviour flow, 03 §1 resource layers, 05 §5 injection order.
+// 设计来源：02 §4.5 行为流程，03 §1 资源分层，05 §5 注入顺序。
 func AddResource(ctx *Context, name string, opts AddOptions) error {
-	// 1. Validate resource name (must be PascalCase)
+	// 1. 校验资源名（必须为 PascalCase）
 	if err := validateResourceName(name); err != nil {
 		return err
 	}
 
-	// 2. Validate With/Without mutex
+	// 2. 校验 With/Without 互斥
 	if len(opts.With) > 0 && len(opts.Without) > 0 {
 		return errs.New(errs.CodeFlagConflict,
 			"scaffold: --with and --without are mutually exclusive").
 			WithHint("use either --with or --without, not both")
 	}
 
-	// 3. Set resource on context
+	// 3. 将 resource 写入 context
 	ctx.Resource = name
 	ctx.Features = computeWith(opts)
 
-	// 4. BuildPlan
+	// 4. 构建 Plan
 	plan, err := BuildPlan(ctx, PlanKindResource)
 	if err != nil {
 		return err
 	}
 
-	// 5. Print summary
+	// 5. 打印摘要
 	fmt.Printf("✔ resource: %s\n", name)
 	fmt.Printf("   + %d files to create\n", len(plan.Creates))
 	if !opts.NoInject {
 		fmt.Printf("   ✏  %d files to update via AST\n", len(plan.Injects))
 	}
 
-	// 6. DryRun: print plan only
+	// 6. DryRun：仅打印计划
 	if ctx.DryRun {
 		for _, spec := range plan.Creates {
 			fmt.Printf("    + %s\n", spec.DestPath)
@@ -69,10 +69,10 @@ func AddResource(ctx *Context, name string, opts AddOptions) error {
 		return nil
 	}
 
-	// 7. Execute with rollback on failure
+	// 7. 执行（失败时回滚）
 	var created []string
 
-	// 7a. Render (create new files)
+	// 7a. 渲染（创建新文件）
 	vars := newTemplateVars(ctx)
 	for _, spec := range plan.Creates {
 		dstPath := filepath.Join(ctx.RootDir, spec.DestPath)
@@ -81,7 +81,7 @@ func AddResource(ctx *Context, name string, opts AddOptions) error {
 			continue
 		}
 		if err := renderOne(ctx, spec, vars); err != nil {
-			// Rollback: delete created files
+			// 回滚：删除已创建的文件
 			cleanupCreated(created)
 			return fmt.Errorf("create %s: %w", spec.DestPath, err)
 		}
@@ -89,7 +89,7 @@ func AddResource(ctx *Context, name string, opts AddOptions) error {
 		fmt.Printf("   + %s\n", spec.DestPath)
 	}
 
-	// 7b. AST injection
+	// 7b. AST 注入
 	if !opts.NoInject && len(plan.Injects) > 0 {
 		injector := linas.NewInjector(ctx.RootDir)
 		injectPlan := linas.InjectPlan{}
@@ -101,7 +101,7 @@ func AddResource(ctx *Context, name string, opts AddOptions) error {
 			})
 		}
 		if err := injector.Inject(injectPlan); err != nil {
-			// Rollback: delete created files
+			// 回滚：删除已创建的文件
 			cleanupCreated(created)
 			return fmt.Errorf("ast inject: %w", err)
 		}
@@ -110,7 +110,7 @@ func AddResource(ctx *Context, name string, opts AddOptions) error {
 		}
 	}
 
-	// 8. Next steps
+	// 8. 提示后续步骤
 	fmt.Printf("📦 Next steps:\n")
 	if hasProto(ctx) {
 		fmt.Printf("   make protoc\n")
@@ -121,12 +121,12 @@ func AddResource(ctx *Context, name string, opts AddOptions) error {
 	return nil
 }
 
-// buildResourcePlan constructs the Plan for PlanKindResource.
+// buildResourcePlan 构建 PlanKindResource 对应的 Plan。
 func buildResourcePlan(ctx *Context) (*Plan, error) {
 	res := ctx.Resource
 	lower := strings.ToLower(res)
-	// strcase.ToLowerCamel returns lower-camel, e.g. "PostItem" → "postItem"
-	// but for a simple word like "Post" it returns "post"
+	// strcase.ToLowerCamel 返回 lower-camel，如 "PostItem" → "postItem"
+	// 对于 "Post" 这种简单单词直接返回 "post"
 	lowerCamel := strcase.ToLowerCamel(res)
 	appName := ctx.AppName
 	ver := "v1"
@@ -142,14 +142,14 @@ func buildResourcePlan(ctx *Context) (*Plan, error) {
 		Permissions:  0o644,
 	})
 
-	// 2. biz/v1/post/post.go (interface + struct + New)
+	// 2. biz/v1/post/post.go（接口 + 结构体 + New 函数）
 	plan.Creates = append(plan.Creates, FileSpec{
 		TemplatePath: "resource/biz/biz.go.tpl",
 		DestPath:     filepath.Join("internal", appName, "biz", ver, lower, lower+".go"),
 		Permissions:  0o644,
 	})
 
-	// 3-7. biz verb files
+	// 3-7. biz 的各 verb 文件
 	for _, verb := range []string{"create", "update", "delete", "get", "list"} {
 		plan.Creates = append(plan.Creates, FileSpec{
 			TemplatePath: "resource/biz/verb_" + verb + ".go.tpl",
@@ -172,10 +172,10 @@ func buildResourcePlan(ctx *Context) (*Plan, error) {
 		Permissions:  0o644,
 	})
 
-	// Optional layers based on With/Without
+	// 根据 With/Without 决定是否生成可选层
 	with := computeWithMap(ctx.Features)
 
-	// 10. pkg/conversion/post.go (if with:conversion)
+	// 10. pkg/conversion/post.go（with:conversion 时生成）
 	if with["conversion"] {
 		plan.Creates = append(plan.Creates, FileSpec{
 			TemplatePath: "resource/conversion.go.tpl",
@@ -184,7 +184,7 @@ func buildResourcePlan(ctx *Context) (*Plan, error) {
 		})
 	}
 
-	// 11. pkg/validation/post.go (if with:validation)
+	// 11. pkg/validation/post.go（with:validation 时生成）
 	if with["validation"] {
 		plan.Creates = append(plan.Creates, FileSpec{
 			TemplatePath: "resource/validation.go.tpl",
@@ -193,7 +193,7 @@ func buildResourcePlan(ctx *Context) (*Plan, error) {
 		})
 	}
 
-	// 12. internal/pkg/errno/post.go (if with:errno)
+	// 12. internal/pkg/errno/post.go（with:errno 时生成）
 	if with["errno"] {
 		plan.Creates = append(plan.Creates, FileSpec{
 			TemplatePath: "resource/errno.go.tpl",
@@ -202,14 +202,14 @@ func buildResourcePlan(ctx *Context) (*Plan, error) {
 		})
 	}
 
-	// 13. pkg/api/<app>/v1/post.proto (if with:proto)
+	// 13. pkg/api/<app>/v1/post.proto（with:proto 时生成）
 	if with["proto"] {
 		plan.Creates = append(plan.Creates, FileSpec{
 			TemplatePath: "resource/proto.tpl",
 			DestPath:     filepath.Join("pkg", "api", appName, "v1", lower+".proto"),
 			Permissions:  0o644,
 		})
-		// Placeholder Go types (allows go build before `make protoc`)
+		// 占位 Go 类型（保证 `make protoc` 之前 go build 仍能通过）
 		plan.Creates = append(plan.Creates, FileSpec{
 			TemplatePath: "resource/proto_go.go.tpl",
 			DestPath:     filepath.Join("pkg", "api", appName, "v1", lower+"_lin.go"),
@@ -221,10 +221,10 @@ func buildResourcePlan(ctx *Context) (*Plan, error) {
 
 	pascal := strcase.ToCamel(res)
 	// strcase.ToCamel("post") = "Post"
-	// lowerCamel = "post" (for simple names)
+	// lowerCamel = "post"（针对简单单词）
 	_ = lowerCamel
 
-	// 1. biz.go: add IBiz.PostV1() method + import + receiver
+	// 1. biz.go：注入 IBiz.PostV1() 方法 + import + receiver
 	bizFile := filepath.Join("internal", appName, "biz", "biz.go")
 	bizImportAlias := lower + ver
 	bizImportPath := ctx.Module + "/internal/" + appName + "/biz/" + ver + "/" + lower
@@ -242,7 +242,7 @@ func buildResourcePlan(ctx *Context) (*Plan, error) {
 		},
 	})
 
-	// 2. store.go: add IStore.Posts() method + receiver
+	// 2. store.go：注入 IStore.Posts() 方法 + receiver
 	storeFile := filepath.Join("internal", appName, "store", "store.go")
 	plural := inflection.Plural(pascal)
 	structStore := "datastore"
@@ -261,7 +261,7 @@ func buildResourcePlan(ctx *Context) (*Plan, error) {
 		},
 	})
 
-	// 3. proto: add import "post.proto"
+	// 3. proto：追加 import "post.proto"
 	if with["proto"] {
 		protoFile := filepath.Join("pkg", "api", appName, "v1", appName+".proto")
 		plan.Injects = append(plan.Injects, InjectSpec{
@@ -273,7 +273,7 @@ func buildResourcePlan(ctx *Context) (*Plan, error) {
 		})
 	}
 
-	// 4. errno/register.go: RegisterErrors(PostErrors()...)
+	// 4. errno/register.go：追加 RegisterErrors(PostErrors()...)
 	if with["errno"] {
 		registerFile := filepath.Join("internal", "pkg", "errno", "register.go")
 		plan.Injects = append(plan.Injects, InjectSpec{
@@ -290,7 +290,7 @@ func buildResourcePlan(ctx *Context) (*Plan, error) {
 }
 
 
-// validateResourceName checks that name is PascalCase (starts with uppercase, no special chars).
+// validateResourceName 校验资源名是否为 PascalCase（首字母大写，仅字母数字）。
 func validateResourceName(name string) error {
 	if name == "" {
 		return errs.New(errs.CodeBadResourceName, "scaffold: resource name cannot be empty")
@@ -310,7 +310,7 @@ func validateResourceName(name string) error {
 	return nil
 }
 
-// computeWith returns the effective with-features list, defaulting to all if neither With nor Without is set.
+// computeWith 返回最终生效的 with 列表；当 With/Without 都未设置时返回默认全集。
 func computeWith(opts AddOptions) []string {
 	defaultWith := []string{"conversion", "validation", "proto", "errno"}
 	if len(opts.With) > 0 {
@@ -332,7 +332,7 @@ func computeWith(opts AddOptions) []string {
 	return defaultWith
 }
 
-// computeWithMap returns a set of enabled features.
+// computeWithMap 将启用的特性列表转换为 set。
 func computeWithMap(features []string) map[string]bool {
 	m := map[string]bool{}
 	for _, f := range features {
@@ -341,7 +341,7 @@ func computeWithMap(features []string) map[string]bool {
 	return m
 }
 
-// hasProto checks whether proto is in features.
+// hasProto 判断 features 中是否启用了 proto。
 func hasProto(ctx *Context) bool {
 	for _, f := range ctx.Features {
 		if f == "proto" {
@@ -351,10 +351,9 @@ func hasProto(ctx *Context) bool {
 	return false
 }
 
-// cleanupCreated removes the list of created files (rollback on failure).
+// cleanupCreated 删除已创建的文件列表（失败回滚）。
 func cleanupCreated(paths []string) {
 	for _, p := range paths {
 		_ = os.Remove(p)
 	}
 }
-

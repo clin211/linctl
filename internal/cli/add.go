@@ -52,7 +52,7 @@ Plus AST injection into 4 central files.`,
 
 func runAdd(g *Globals) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		// 1. Parse flags
+		// 1. 解析命令行 flag
 		flags := cmd.Flags()
 
 		appName, _ := flags.GetString("app")
@@ -67,7 +67,7 @@ func runAdd(g *Globals) func(*cobra.Command, []string) error {
 		skipImports, _ := flags.GetBool("skip-imports")
 		force, _ := flags.GetBool("force")
 
-		// 2. Validate resource names
+		// 2. 校验资源名
 		if len(args) == 0 {
 			if g.NonInteractive {
 				return errs.New(errs.CodeInvalidArg,
@@ -79,13 +79,13 @@ func runAdd(g *Globals) func(*cobra.Command, []string) error {
 				WithHint("usage: linctl add Post [Comment...] [--with conversion,validation,proto,errno]")
 		}
 
-		// 3. Detect project root (working directory)
+		// 3. 推断项目根目录（当前工作目录）
 		cwd, err := os.Getwd()
 		if err != nil {
 			return errs.Wrap(errs.CodeUnknown, "add: get working directory", err)
 		}
 
-		// 4. LoadContext
+		// 4. 加载上下文
 		ctx, err := scaffold.LoadContext(cwd, scaffold.Flags{
 			AppName:     appName,
 			Chdir:       g.Chdir,
@@ -100,7 +100,7 @@ func runAdd(g *Globals) func(*cobra.Command, []string) error {
 		fmt.Printf("✔ context loaded   module=%s appName=%s storage=%s\n",
 			ctx.Module, ctx.AppName, ctx.Storage)
 
-		// 5. Build AddOptions
+		// 5. 构造 AddOptions
 		opts := scaffold.AddOptions{
 			With:        with,
 			Without:     without,
@@ -111,10 +111,10 @@ func runAdd(g *Globals) func(*cobra.Command, []string) error {
 			SkipImports: skipImports,
 		}
 
-		// 6. Add each resource
+		// 6. 逐个添加资源
 		for _, name := range args {
 			if err := scaffold.AddResource(ctx, name, opts); err != nil {
-				// Map to user-visible exit code
+				// 映射为用户可见的退出码
 				code := errs.CodeOf("add", err)
 				fmt.Fprintf(cmd.ErrOrStderr(),
 					"✗ add %s failed (exit %d): %v\n", name, code, err)

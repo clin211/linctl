@@ -116,7 +116,7 @@ func DefaultFuncs() template.FuncMap {
 		// 大小写
 		"Lower": strings.ToLower,
 		"Upper": strings.ToUpper,
-		//nolint:staticcheck // strings.Title deprecated but acceptable here
+		//nolint:staticcheck // strings.Title 虽已 deprecated，但此处用法可接受
 		"Title": strings.Title,
 		// 单复数（inflection）
 		"Plural":   inflection.Plural,
