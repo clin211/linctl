@@ -153,32 +153,57 @@ func TestLint_RegisterConsistency_Missing(t *testing.T) {
 	}
 }
 
-func TestLint_PostProtocPlaceholder(t *testing.T) {
+func TestLint_MissingPbGo(t *testing.T) {
 	dir := makeTestProject(t, "testapp")
 	setupCentralFiles(t, dir, "testapp")
 
 	mustMkdirAll(t, filepath.Join(dir, "pkg", "api", "testapp", "v1"))
 	writeTestFile(t,
-		filepath.Join(dir, "pkg", "api", "testapp", "v1", "post_lin.go"),
-		"package v1\n")
+		filepath.Join(dir, "pkg", "api", "testapp", "v1", "post.proto"),
+		"syntax = \"proto3\";\npackage v1;\n")
 
 	report, err := check.Lint(dir, check.LintOptions{
-		Rules: []string{"lin/post-protoc-placeholder"},
+		Rules: []string{"proto/missing-pb-go"},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	found := false
 	for _, it := range report.Items {
-		if it.Name == "lin/post-protoc-placeholder" && it.Status == "info" {
+		if it.Name == "proto/missing-pb-go" && it.Status == "info" {
 			found = true
-			if !strings.Contains(it.Message, "post_lin.go") {
-				t.Errorf("expected post_lin.go in message, got: %s", it.Message)
+			if !strings.Contains(it.Message, "post.proto") {
+				t.Errorf("expected post.proto in message, got: %s", it.Message)
 			}
 		}
 	}
 	if !found {
-		t.Error("expected lin/post-protoc-placeholder info item")
+		t.Error("expected proto/missing-pb-go info item")
+	}
+}
+
+func TestLint_PbGoExists(t *testing.T) {
+	dir := makeTestProject(t, "testapp")
+	setupCentralFiles(t, dir, "testapp")
+
+	mustMkdirAll(t, filepath.Join(dir, "pkg", "api", "testapp", "v1"))
+	writeTestFile(t,
+		filepath.Join(dir, "pkg", "api", "testapp", "v1", "post.proto"),
+		"syntax = \"proto3\";\npackage v1;\n")
+	writeTestFile(t,
+		filepath.Join(dir, "pkg", "api", "testapp", "v1", "post.pb.go"),
+		"package v1\n")
+
+	report, err := check.Lint(dir, check.LintOptions{
+		Rules: []string{"proto/missing-pb-go"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, it := range report.Items {
+		if it.Name == "proto/missing-pb-go" {
+			t.Errorf("unexpected proto/missing-pb-go item when .pb.go exists: %s", it.Message)
+		}
 	}
 }
 

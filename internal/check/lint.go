@@ -111,21 +111,25 @@ func Lint(rootDir string, opts LintOptions) (*Report, error) {
 		checkRegisterConsistency(report, rootDir, app, "store-impl", opts)
 	}
 
-	// ── 3. protoc 后的占位文件 ─────────────────────────────────────────
-	if shouldRun("lin/post-protoc-placeholder") {
-		pattern := filepath.Join(rootDir, "pkg", "api", app, "v1", "*_lin.go")
-		placeholders, _ := filepath.Glob(pattern)
-		if len(placeholders) > 0 {
-			names := make([]string, len(placeholders))
-			for i, p := range placeholders {
-				names[i] = filepath.Base(p)
+	// ── 3. protoc 生成检查 ──────────────────────────────────────────────
+	if shouldRun("proto/missing-pb-go") {
+		protoPattern := filepath.Join(rootDir, "pkg", "api", app, "v1", "*.proto")
+		protos, _ := filepath.Glob(protoPattern)
+		var missing []string
+		for _, p := range protos {
+			base := strings.TrimSuffix(filepath.Base(p), ".proto")
+			pbGo := filepath.Join(filepath.Dir(p), base+".pb.go")
+			if _, err := os.Stat(pbGo); os.IsNotExist(err) {
+				missing = append(missing, base+".proto")
 			}
+		}
+		if len(missing) > 0 {
 			report.addItem(Item{
-				Category: "placeholder",
-				Name:     "lin/post-protoc-placeholder",
+				Category: "proto",
+				Name:     "proto/missing-pb-go",
 				Status:   "info",
-				Message:  fmt.Sprintf("found %d _lin.go placeholder(s): %s", len(placeholders), strings.Join(names, ", ")),
-				Hint:     "run 'make protoc' to generate proto stubs, then remove _lin.go placeholders",
+				Message:  fmt.Sprintf("%d proto file(s) missing generated .pb.go: %s", len(missing), strings.Join(missing, ", ")),
+				Hint:     "run 'make protoc' to generate Go stubs from proto definitions",
 			})
 		}
 	}

@@ -209,12 +209,6 @@ func buildResourcePlan(ctx *Context) (*Plan, error) {
 			DestPath:     filepath.Join("pkg", "api", appName, "v1", lower+".proto"),
 			Permissions:  0o644,
 		})
-		// 占位 Go 类型（保证 `make protoc` 之前 go build 仍能通过）
-		plan.Creates = append(plan.Creates, FileSpec{
-			TemplatePath: "resource/proto_go.go.tpl",
-			DestPath:     filepath.Join("pkg", "api", appName, "v1", lower+"_lin.go"),
-			Permissions:  0o644,
-		})
 	}
 
 	// --- Injects ---

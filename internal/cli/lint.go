@@ -29,7 +29,7 @@ Checks include:
   - dir/internal-app             internal/<app>/{handler,biz,store,model} exist
   - register/biz-impl            every biz/v1/<res>/ is wired into biz.IBiz
   - register/store-impl          every store/<res>.go is wired into store.IStore
-  - lin/post-protoc-placeholder  _lin.go placeholder files from proto generation
+  - proto/missing-pb-go           .proto files missing generated .pb.go counterparts
   - safety/path-traversal        scaffold path safety check
 
 --fix is reserved for future auto-fixers (currently a no-op for register/* rules).`,
