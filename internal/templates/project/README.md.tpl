@@ -11,8 +11,6 @@
 - **共享库**：[linhub](https://github.com/clin211/linhub)（`github.com/clin211/linhub`）—— 提供 db、log、errx、core、store、options 等基础能力
 - **语言**：Go {{.GoVersion}}
 
-本地 monorepo 提示：`go.mod` 中包含 `replace github.com/clin211/linhub => ../linhub`，便于在与 linhub 检出目录并列时直接构建生成的应用。
-
 ## 快速开始
 
 ```bash

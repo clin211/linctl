@@ -16,6 +16,7 @@ import (
 
 	"github.com/clin211/linhub/log"
 
+	"{{.Module}}/cmd/{{.AppName}}/app/options"
 	"{{.Module}}/internal/{{.AppName}}/biz"
 	"{{.Module}}/internal/{{.AppName}}/handler"
 	"{{.Module}}/internal/{{.AppName}}/store"
@@ -40,25 +41,34 @@ var configFile string
 
 // NewWebServerCommand 创建应用程序的 cobra 根命令。
 func NewWebServerCommand() *cobra.Command {
+	opts := options.NewServerOptions()
+
 	cmd := &cobra.Command{
 		Use:          "{{.AppName}}",
 		Short:        "{{.AppName | Title}} API server",
 		Long:         `{{.AppName | Title}} is a Go backend service.`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return run(cmd.Context())
+			if err := viper.Unmarshal(opts); err != nil {
+				return fmt.Errorf("failed to unmarshal configuration: %w", err)
+			}
+			if err := opts.Validate(); err != nil {
+				return fmt.Errorf("invalid options: %w", err)
+			}
+			return run(cmd.Context(), opts)
 		},
 		Args: cobra.NoArgs,
 	}
 
 	cobra.OnInitialize(initConfig)
 	cmd.PersistentFlags().StringVarP(&configFile, "config", "c", filePath(), "Path to the configuration file.")
+	opts.AddFlags(cmd.PersistentFlags())
 
 	return cmd
 }
 
-func run(ctx context.Context) error {
-	addr := viper.GetString("server.http.addr")
+func run(ctx context.Context, opts *options.ServerOptions) error {
+	addr := opts.HTTPOptions.Addr
 	if addr == "" {
 		addr = ":8080"
 	}
@@ -91,6 +101,14 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("bigcache init: %w", err)
 	}
 	defer func() { _ = cache.CloseBigCache() }()
+{{- end}}
+
+{{- if .Features | Has "otel"}}
+	// 应用 OpenTelemetry 配置。
+	if err := opts.OTelOptions.Apply(); err != nil {
+		return fmt.Errorf("otel apply: %w", err)
+	}
+	defer func() { _ = opts.OTelOptions.Shutdown(ctx) }()
 {{- end}}
 
 	// 注入依赖
